@@ -114,7 +114,7 @@ function readInput_() {
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
   return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
     nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [],
-    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [] };
+    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {} };
 }
 
 // ---------- чистая логика (её же гоняет test/run.js в node) ----------
@@ -204,11 +204,12 @@ function unmask_(t) {
 }
 
 /** Фраза годится для бабла: короткая, без ссылок, ников, телефонов и чужих имён посреди фразы. */
-function clean_(t, maxLen) {
+function clean_(t, maxLen, pinned) {
   t = unmask_(String(t || '')).replace(/\s+/g, ' ').trim();
   if (t.length < 6 || t.length > (maxLen || 110)) return null;
   if (/https?:|www\.|@\w|#|\d{5,}/.test(t)) return null;
-  if (/[^.!?…]\s[А-ЯЁA-Z][а-яёa-z]+/.test(t.replace(/^[^А-ЯЁA-Zа-яёa-z]+/, ''))) return null; // Имя посреди фразы
+  // Имя посреди фразы. В закреплённых фразах слово с заглавной допустимо: их пишет тренер, имена ловит safe()
+  if (!pinned && /[^.!?…]\s[А-ЯЁA-Z][а-яёa-z]+/.test(t.replace(/^[^А-ЯЁA-Zа-яёa-z]+/, ''))) return null;
   if (PERSONAL.test(t)) return null;                                   // адрес, телефон, карта, банк
   if (SURNAME.test(t)) return null;                                    // слово с заглавной, похожее на фамилию
   return t;
@@ -571,6 +572,27 @@ function buildLive_(inp, nowMs, salt, hash) {
   }
   var solo = solos.sort(function (a, b) { return b.score - a.score || b.ms - a.ms; }).slice(0, 40).map(function (x) { return [x.i, x.lines]; });
 
+  // Закреплённые фразы (PINNED в «Прозвищах»): всегда в репликах человека и отдельным монологом.
+  // Фильтр имён, фамилий и личного действует; «понятность» и длина до 200 знаков — нет.
+  var pinnedQ = new Map();
+  Object.keys(inp.pinned || {}).forEach(function (k) {
+    var u = k.replace(/^@/, '').trim().toLowerCase();
+    var who = k.charAt(0) === '@' ? people.filter(function (p) { return p.user === u; })[0] : match(k, false);
+    if (!who || !idx.has(who)) { debug.reportMiss.push('закреплённые фразы для «' + k + '»: человек не на площадке'); return; }
+    [].concat(inp.pinned[k]).forEach(function (raw) {
+      // @ник в закреплённой фразе → ник его персонажа («@happinessguy спасибо» → «Хуанито спасибо»)
+      raw = String(raw).replace(/@([A-Za-z0-9_]{3,})/g, function (_, u) {
+        var o = people.filter(function (p) { return p.user === u.toLowerCase(); })[0];
+        return o && o.n ? o.n : '';
+      }).replace(/\s{2,}/g, ' ');
+      var t = clean_(raw, 200, true);
+      if (!t || !safe(t)) { debug.reportMiss.push('закреплённая фраза не прошла фильтр имён/личного: «' + String(raw).slice(0, 60) + '»'); return; }
+      if (!pinnedQ.has(who)) pinnedQ.set(who, []);
+      pinnedQ.get(who).push(t);
+      solo.unshift([idx.get(who), [t]]);
+    });
+  });
+
   // реплики толпы: короткие ответы из чата («жесть», «ахахах», «ору»)
   var react = [], seenR = {};
   seq.slice().reverse().forEach(function (m) {
@@ -591,7 +613,8 @@ function buildLive_(inp, nowMs, salt, hash) {
   return {
     updated: new Date(nowMs).toISOString().slice(0, 16) + 'Z',
     people: people.map(function (p) {
-      return { n: p.n, g: p.g, t: p.teeth, old: p.old, tr: p.tr, q: pickChat(p.q), b: pickB(p.b) };
+      var pq = pinnedQ.get(p) || [];
+      return { n: p.n, g: p.g, t: p.teeth, old: p.old, tr: p.tr, q: pq.concat(pickChat(p.q).filter(function (x) { return pq.indexOf(x) < 0; })).slice(0, 24), b: pickB(p.b) };
     }),
     fights: fights,
     solo: solo,

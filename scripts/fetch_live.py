@@ -96,7 +96,7 @@ def clean(raw, pools):
             raise Bad(f"{w}.q/b")
         out_people.append({
             "n": n, "g": g, "t": t, "old": p["old"], "tr": p["tr"],
-            "q": [text_ok(x, 120, f"{w}.q") for x in q],
+            "q": [text_ok(x, 210, f"{w}.q") for x in q],
             "b": [b_ok(x, f"{w}.b") for x in b],
         })
     fights = raw.get("fights")
@@ -113,14 +113,14 @@ def clean(raw, pools):
             line.append([who, text_ok(txt, 100, f"fights[{i}][{j}]")])
         out_f.append(line)
     solo = raw.get("solo", [])
-    if not isinstance(solo, list) or len(solo) > 60:
+    if not isinstance(solo, list) or len(solo) > 80:
         raise Bad("solo")
     out_s = []
     for i, x in enumerate(solo):
         if (not isinstance(x, list) or len(x) != 2 or not isinstance(x[0], int) or isinstance(x[0], bool)
                 or not 0 <= x[0] < len(out_people) or not isinstance(x[1], list) or not 1 <= len(x[1]) <= 3):
             raise Bad(f"solo[{i}]")
-        out_s.append([x[0], [text_ok(t, 120, f"solo[{i}]") for t in x[1]]])
+        out_s.append([x[0], [text_ok(t, 210, f"solo[{i}]") for t in x[1]]])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")
