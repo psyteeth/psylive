@@ -36,9 +36,11 @@ var POOLS = {
 
 var MONTHS = ['ЯНВАРЬ', 'ФЕВРАЛЬ', 'МАРТ', 'АПРЕЛЬ', 'МАЙ', 'ИЮНЬ', 'ИЮЛЬ', 'АВГУСТ', 'СЕНТЯБРЬ', 'ОКТЯБРЬ', 'НОЯБРЬ', 'ДЕКАБРЬ'];
 // уменьшительные из таблицы эфиров → полное имя, как в чате
-var DIM = { 'аня': 'анна', 'анюта': 'анна', 'серега': 'сергей', 'сережа': 'сергей', 'оля': 'ольга', 'лера': 'валерия', 'ксюха': 'ксения', 'ксюша': 'ксения', 'таня': 'татьяна', 'маша': 'мария', 'катя': 'екатерина', 'женя': 'евгения', 'саша': 'александра', 'наташа': 'наталья', 'юля': 'юлия', 'настя': 'анастасия', 'лена': 'елена', 'света': 'светлана', 'рита': 'маргарита', 'дима': 'дмитрий', 'миша': 'михаил', 'паша': 'павел', 'вова': 'владимир', 'рома': 'роман', 'леша': 'алексей', 'антоша': 'антон' };
+var DIM = { 'аня': 'анна', 'анюта': 'анна', 'серега': 'сергей', 'сережа': 'сергей', 'оля': 'ольга', 'лера': 'валерия', 'ксюха': 'ксения', 'ксюша': 'ксения', 'таня': 'татьяна', 'маша': 'мария', 'катя': 'екатерина', 'женя': 'евгения', 'саша': 'александра', 'наташа': 'наталья', 'юля': 'юлия', 'настя': 'анастасия', 'лена': 'елена', 'света': 'светлана', 'рита': 'маргарита', 'дима': 'дмитрий', 'миша': 'михаил', 'паша': 'павел', 'вова': 'владимир', 'рома': 'роман', 'леша': 'алексей', 'антоша': 'антон', 'юлька': 'юлия', 'янка': 'яна', 'светуля': 'светлана', 'светка': 'светлана', 'ира': 'ирина', 'нати': 'наталья', 'натали': 'наталья', 'наташка': 'наталья', 'танюша': 'татьяна', 'маринка': 'марина', 'анька': 'анна', 'сашка': 'александра', 'людочка': 'людмила', 'люда': 'людмила' };
 var MALE_A = { 'илья': 1, 'никита': 1, 'серега': 1, 'дима': 1, 'миша': 1, 'паша': 1, 'вова': 1, 'рома': 1, 'леша': 1, 'лева': 1, 'гоша': 1, 'кузьма': 1, 'фома': 1, 'лука': 1, 'антоша': 1, 'nikita': 1, 'ilya': 1 };
 var UNISEX = { 'саша': 1, 'женя': 1, 'валя': 1, 'пользователь': 1, 'sasha': 1 };
+// служебные пометки в ячейках эфиров, а не люди
+var EFIR_JUNK = /занято|эфир|очеред|будет|приходите|медит|медиид|медииа|бронь|отмен|перенос|свободн|резерв/;
 var MAT = /(?:ху[йеёяи]|пизд|бля|(?<![а-яё])(?:[её]бан|[её]бат|[её]бал|[её]бу|[её]бл|[её]би|ёб)|(?:за|на|у|вы|от|отъ|до|про|при|по|под|раз|съ)[её]б|сука|суки|сучк|жоп|говн|дерьм|залуп|муда[кч]|мудил|херн|хрен|нахер|похер|охуе|сран|срал|задолба)/i;
 
 function doGet() {
@@ -75,6 +77,9 @@ function debugLive() {
   var rows = readInput_().msgs, cT = col_(rows[0], 'Текст'), ex = [];
   for (var i = rows.length - 1; i > 0 && ex.length < 5; i--) if (/Зуб/i.test(rows[i][cT]) && !/Клиент/i.test(rows[i][cT])) ex.push(String(rows[i][cT]).slice(0, 200));
   Logger.log('Примеры сообщений со словом «Зуб», которые не похожи на отчёт:\n' + ex.join('\n---\n'));
+  var ex2 = [];
+  for (var j = rows.length - 1; j > 0 && ex2.length < 5; j--) if (/Клиент/i.test(rows[j][cT])) ex2.push(String(rows[j][cT]).slice(0, 300));
+  Logger.log('Последние сообщения со словом «Клиент»:\n' + ex2.join('\n---\n'));
 }
 
 function hashGs_(s) {
@@ -103,6 +108,23 @@ function norm_(s) {
 
 var TR = { 'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya' };
 function translit_(s) { return s.split('').map(function (c) { return TR[c] != null ? TR[c] : c; }).join(''); }
+function latVariants_(s) {
+  var a = translit_(s);
+  var b = a.replace(/ya/g, 'ia').replace(/yu/g, 'iu').replace(/y$/, 'i').replace(/ey/g, 'ei').replace(/kh/g, 'h');
+  var c = a.replace(/ey$/, 'ii').replace(/g/g, 'h');
+  return [a, b, c].filter(function (x, i, arr) { return arr.indexOf(x) === i; });
+}
+function lev1_(a, b) { // расстояние Левенштейна не больше 1
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  var i = 0, j = 0, d = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++d > 1) return false;
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+  }
+  return d + (a.length - i) + (b.length - j) <= 1;
+}
 
 function parseDT_(s) {
   var m = /(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(String(s || ''));
@@ -129,7 +151,7 @@ function efirNames_(display) {
       if (!/^\s*\d{1,2}:\d{2}\s*$/.test(display[r][c])) continue;
       String(display[r][c + 1] || '').split(',').forEach(function (p) {
         var n = norm_(p);
-        if (n && n !== 'занято' && n.indexOf('эфир') < 0) out[n] = 1;
+        if (n && !EFIR_JUNK.test(n) && !MAT.test(n)) out[n] = 1;
       });
     }
   }
@@ -157,8 +179,8 @@ function buildLive_(inp, nowMs, salt, hash) {
     inp.champ.slice(1).forEach(function (r) { if (/тренер/i.test(r[ir])) trainers[String(r[iu]).replace(/^@/, '').toLowerCase()] = 1; });
   }
 
-  var P = {}, list = [], botLines = [], seq = [], reports = [], pointB = [];
-  var stats = { efir_unmatched: 0, efir_ambiguous: 0, reports: 0, reports_matched: 0, point_b: 0, point_b_matched: 0, zub_msgs: 0 };
+  var P = {}, list = [], botLines = [], seq = [], reports = [], pointB = [], selfTeeth = {}, nickTeeth = {};
+  var stats = { efir_unmatched: 0, efir_ambiguous: 0, reports: 0, reports_matched: 0, point_b: 0, point_b_matched: 0, zub_msgs: 0, self_teeth: 0, nick_teeth: 0 };
   var debug = { unmatched: [], ambiguous: [], reportMiss: [] }; // только для debugLive, наружу не уходит
   var real = {}; // настоящие имена и ники: для последней проверки
   function person(key, author, user) {
@@ -181,9 +203,26 @@ function buildLive_(inp, nowMs, salt, hash) {
       var th = rep[2].match(/\b[1-4][1-8]\b/g) || [];
       if (th.length) reports.push({ ms: ms, name: rep[1], teeth: th });
     }
+    var reNick = /@([A-Za-z0-9_]{3,})\s+([1-4][1-8])\s*-?\s*(?:[а-яё]{1,3}\s+)?зуб/gi, nm;
+    while ((nm = reNick.exec(text))) {
+      var nu = nm[1].toLowerCase();
+      nickTeeth[nu] = nickTeeth[nu] || {};
+      nickTeeth[nu][nm[2]] = (nickTeeth[nu][nm[2]] || 0) + 1;
+      stats.nick_teeth++;
+    }
     var isBot = /bot$/i.test(user) || /бот|джузеппе|giuseppe/i.test(author);
     if (isBot) { botLines.push({ ms: ms, text: text }); continue; }
     if (!author || (author === 'Telegram' && !user)) continue;
+    // свой зуб в собственных сообщениях: «у меня 46-й ноет», «зуб 21», «мой клык 43»
+    if (!/Клиент/i.test(text)) {
+      var reSelf = /(?:зуб|клык|резец|моляр|премоляр)[а-яё]*[^.!?\n\d]{0,20}?\b([1-4][1-8])\b|\b([1-4][1-8])\s*-?\s*(?:й|ой|ый|ом|ого|ым)?\s+(?:зуб|клык|резец|моляр)/gi, sm;
+      var sk = user ? 'u:' + user : 'a:' + norm_(author);
+      while ((sm = reSelf.exec(text))) {
+        var st = sm[1] || sm[2];
+        selfTeeth[sk] = selfTeeth[sk] || {};
+        selfTeeth[sk][st] = (selfTeeth[sk][st] || 0) + 1;
+      }
+    }
     // точка Б: пост тренера с тегом #точкаБ, строки «@ник — фраза»
     if (trainers[user] && /#точка\s*б/i.test(text)) {
       text.split('\n').forEach(function (line) {
@@ -211,14 +250,24 @@ function buildLive_(inp, nowMs, salt, hash) {
   }
   function matchNew(toks, create) {
     var first = toks[0], canon = DIM[first] || first, rest = toks[1] || '';
-    var lat = translit_(canon).slice(0, 4);
-    var cands = list.filter(function (p) {
-      return p.toks.indexOf(canon) >= 0 || p.toks.indexOf(first) >= 0 || (p.user && lat.length >= 3 && p.user.indexOf(lat) === 0);
-    });
+    var lats = latVariants_(canon);
+    function hit(p) {
+      if (p.toks.indexOf(canon) >= 0 || p.toks.indexOf(first) >= 0) return true;
+      return lats.some(function (l) { return l.length >= 3 && (p.toks.indexOf(l) >= 0 || (p.user && p.user.indexOf(l) === 0)); });
+    }
+    var cands = list.filter(hit);
+    if (!cands.length && canon.length >= 5) { // опечатка: «камила», «калилла»
+      cands = list.filter(function (p) { return p.toks.some(function (t) { return t.length >= 5 && lev1_(t, canon); }); });
+    }
     if (rest && cands.length > 1) {
       var rl = translit_(rest);
-      cands = cands.filter(function (p) {
-        return p.toks.some(function (t) { return t !== canon && t !== first && t.indexOf(rest) === 0; }) || (p.user && rl.length >= 2 && p.user.indexOf(rl) >= 0); // «т» → t слишком коротко для ника
+      // сначала по фамилии в имени автора, и только если не вышло, по нику
+      var byTok = cands.filter(function (p) { return p.toks.some(function (t) { return t !== canon && t !== first && t.indexOf(rest) === 0; }); });
+      cands = byTok.length ? byTok : cands.filter(function (p) {
+        if (!p.user) return false;
+        if (rl.length >= 2 && p.user.indexOf(rl) >= 0) return true;
+        // «аня к» → annakuslieva: после имени в нике идёт буква фамилии
+        return lats.some(function (l) { var u = p.user.replace(/[_.\d]/g, ''); return u.indexOf(l) === 0 && u.slice(l.length).indexOf(rl) === 0; });
       });
     }
     if (cands.length > 1) {
@@ -241,8 +290,12 @@ function buildLive_(inp, nowMs, salt, hash) {
 
   inp.months.forEach(function (m) {
     efirNames_(m.display).forEach(function (n) {
-      var p = match(n, true);
-      if (m.name === inp.current) p.efirNow = true; else p.efirPast = true;
+      var parts = [n], toks = n.split(' ');
+      if (toks.length === 2 && toks[1].length >= 3 && !match(n, false) && match(toks[0], false) && match(toks[1], false)) parts = toks;
+      parts.forEach(function (x) {
+        var p = match(x, true);
+        if (m.name === inp.current) p.efirNow = true; else p.efirPast = true;
+      });
     });
   });
 
@@ -252,6 +305,22 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (!p) return;
     stats.reports_matched++;
     rp.teeth.forEach(function (t) { if (p.teeth.indexOf(t) < 0 && p.teeth.length < 4) p.teeth.push(t); });
+  });
+
+  // «@ник 43 зуб — пыхтение»: зуб привязан к нику напрямую
+  list.forEach(function (p) {
+    var c = p.user && nickTeeth[p.user];
+    if (!c) return;
+    Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).forEach(function (t) { if (p.teeth.indexOf(t) < 0 && p.teeth.length < 4) p.teeth.push(t); });
+  });
+
+  // нет ни отчёта, ни ника: берём зубы, которые человек сам называл хотя бы дважды
+  list.forEach(function (p) {
+    var c = selfTeeth[p.key];
+    if (p.teeth.length || !c) return;
+    Object.keys(c).filter(function (t) { return c[t] >= 2; }).sort(function (a, b) { return c[b] - c[a]; }).slice(0, 2)
+      .forEach(function (t) { p.teeth.push(t); });
+    if (p.teeth.length) stats.self_teeth++;
   });
 
   pointB.forEach(function (b) {
