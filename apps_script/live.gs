@@ -383,10 +383,16 @@ function buildLive_(inp, nowMs, salt, hash) {
   people.sort(function (a, b) { return (a.firstMs === Infinity ? 9e15 : a.firstMs) - (b.firstMs === Infinity ? 9e15 : b.firstMs) || (a.key < b.key ? -1 : 1); });
   var used = {};
   // ручные ники (NICKS в «Прозвищах»): '@ник_telegram' → 'Паулетта'; пол берётся из списка, где этот ник
-  var nicks = {};
-  Object.keys(inp.nicks || {}).forEach(function (k) { nicks[k.replace(/^@/, '').trim().toLowerCase()] = String(inp.nicks[k]).trim(); });
+  // ключ — '@ник_telegram' или имя, как в чате («ксения кроссман»)
+  var nicks = {}, nickByPerson = new Map();
+  Object.keys(inp.nicks || {}).forEach(function (k) {
+    var v = String(inp.nicks[k]).trim(), key = k.trim();
+    if (key.charAt(0) === '@') { nicks[key.slice(1).toLowerCase()] = v; return; }
+    var who = match(key, false);
+    if (who) nickByPerson.set(who, v); else debug.reportMiss.push('ник для «' + key + '»: человек не найден');
+  });
   people.forEach(function (p) {
-    var want = p.user && nicks[p.user];
+    var want = (p.user && nicks[p.user]) || nickByPerson.get(p);
     if (!want || used[want]) return;
     ['f', 'm', 'u'].forEach(function (g) { if (!p.n && POOLS[g].indexOf(want) >= 0) { p.n = want; p.g = g; used[want] = 1; } });
   });

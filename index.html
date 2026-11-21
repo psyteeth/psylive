@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Психостоматология вживую</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Neucha&family=Rubik:wght@500;700&family=Playfair+Display:wght@700&family=Press+Start+2P&family=Manrope:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Neucha&family=Rubik:wght@500;700&family=Playfair+Display:wght@700&family=Press+Start+2P&family=Manrope:wght@500;700&display=swap">
 <style>
 /* VOICE: игровой, живой, с матом из чата; первая страница по скетчу владельца
    IDEA: зубная формула над площадкой, где гуляют человечки-участники и говорят баблами
@@ -14,17 +14,17 @@
    LAYOUT: шапка с переключателем вариантов, строка зуба, сцена во всю ширину */
 *{box-sizing:border-box;min-width:0}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);overflow-x:clip;color-scheme:var(--cs)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip;color-scheme:var(--cs)}
 body[data-v="1"]{--cs:light;--font:Neucha,"Comic Sans MS",cursive;--bg:#fbfaf5;--ink:#2a2a35;--mute:#5d5d6c;--stage:transparent;--arena:transparent;--tooth:#fff;--tink:#2a2a35;--tnum:#2a2a35;--fig:#2a2a35;--acc:#d2452f;--acct:#fff;--accs:#fde3dc;--bub:#fff;--bubi:#2a2a35;--bubl:#2a2a35;--tw:2.5;
   background-image:repeating-linear-gradient(to bottom,transparent 0 31px,#d3def0 31px 32px)}
 body[data-v="2"]{--cs:light;--font:Rubik,system-ui,sans-serif;--bg:#fff4cf;--ink:#1d1d1d;--mute:#4f4a3a;--stage:#ffe08a;--arena:linear-gradient(#86cdf2 0 36%,#8fce6a 36%);--tooth:#fff;--tink:#1d1d1d;--tnum:#1d1d1d;--fig:#1d1d1d;--acc:#e8432f;--acct:#fff;--accs:#ffd2c8;--bub:#fff;--bubi:#1d1d1d;--bubl:#1d1d1d;--tw:4;--sb:3px solid #1d1d1d}
 body[data-v="3"]{--cs:dark;--font:Manrope,system-ui,sans-serif;--hfont:"Playfair Display",Georgia,serif;--bg:#1c120d;--ink:#f6dcb8;--mute:#c9a988;--stage:radial-gradient(ellipse at 50% 60%,#ffe2ae 0,#eeaa5e 50%,#7d3d1c 100%);--arena:transparent;--tooth:#1a100c;--tink:#1a100c;--tnum:#1a100c;--fig:#1a100c;--acc:#fff1d6;--acct:#1a100c;--accs:#5a3322;--bub:#fff4df;--bubi:#1a100c;--bubl:#1a100c;--tw:2;--nm:#1a100c}
-body[data-v="4"]{--cs:dark;--font:"Press Start 2P",monospace;--bg:#15121f;--ink:#f4f1e8;--mute:#b9b2d6;--stage:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 8px),#2c2546;--arena:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 8px),linear-gradient(#2c2546 0 30%,#2f5a3e 30%);--tooth:#f4f1e8;--tink:#0f0c1a;--tnum:#f4f1e8;--fig:#f4f1e8;--acc:#ffcc33;--acct:#0f0c1a;--accs:#6c5fb0;--bub:#f4f1e8;--bubi:#0f0c1a;--bubl:#0f0c1a;--tw:4;--r:0;--sr:0;font-size:11px}
+body[data-v="4"]{--cs:dark;--font:"Press Start 2P",monospace;--bg:#15121f;--ink:#f4f1e8;--mute:#b9b2d6;--stage:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 8px),#2c2546;--arena:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 8px),linear-gradient(#2c2546 0 30%,#2f5a3e 30%);--tooth:#f4f1e8;--tink:#0f0c1a;--tnum:#f4f1e8;--fig:#f4f1e8;--acc:#ffcc33;--acct:#0f0c1a;--accs:#6c5fb0;--bub:#f4f1e8;--bubi:#0f0c1a;--bubl:#0f0c1a;--tw:4;--r:0;--sr:0}
 body[data-v="5"]{--cs:light dark;--font:Manrope,system-ui,sans-serif;--bg:light-dark(#f4f5f9,#101218);--ink:light-dark(#151823,#e9ecf5);--mute:light-dark(#5b6175,#9aa1b6);--stage:light-dark(#fff,#181b24);--arena:transparent;--tooth:light-dark(#fff,#e3e6ee);--tink:light-dark(#b9bfd0,#5a6178);--tnum:light-dark(#5b6175,#9aa1b6);--fig:light-dark(#151823,#e9ecf5);--acc:light-dark(#3352ff,#8aa0ff);--acct:light-dark(#fff,#101218);--accs:light-dark(#e3e8ff,#2a3150);--bub:light-dark(#fff,#262b38);--bubi:light-dark(#151823,#e9ecf5);--bubl:light-dark(#dfe3ee,#3a4054);--tw:2;--sb:1px solid light-dark(#e1e4ee,#272b38)}
 :root[data-theme=light] body[data-v="5"]{--cs:light}:root[data-theme=dark] body[data-v="5"]{--cs:dark}
 .wrap{max-width:1240px;margin:0 auto;padding-block:20px 36px;padding-left:max(16px,4vw);padding-right:max(16px,4vw);display:grid;gap:14px}
 .top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between}
-h1{font-family:var(--hfont,var(--font));font-size:clamp(26px,4vw,40px);line-height:1.08;margin:0;text-wrap:balance}
+h1{font-family:var(--hfont,var(--font));font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.08;margin:0;text-wrap:balance}
 body[data-v="4"] h1{font-size:clamp(15px,2.4vw,22px);line-height:1.5}
 .sub,.note{margin:0;color:var(--mute);font-size:.9em}
 .tabs,.ctrl{display:flex;flex-wrap:wrap;gap:6px}
@@ -44,8 +44,8 @@ button:focus-visible,.tooth:focus-visible,.p:focus-visible{outline:3px solid var
 .tooth path{fill:var(--tooth);stroke:var(--tink);stroke-width:var(--tw);stroke-linejoin:round}
 .tooth:hover path,.tooth:focus-visible path{fill:var(--accs)}
 .tooth.sel path{fill:var(--acc)}
-.num{fill:var(--tnum);font:700 21px var(--font);text-anchor:middle}
-body[data-v="4"] .num{font-size:15px}
+.num{fill:var(--tnum);font:700 21px Inter,system-ui,sans-serif;text-anchor:middle}
+
 .cnt circle{fill:var(--acc)}.cnt text{fill:var(--acct);font:700 17px Manrope,sans-serif;text-anchor:middle;dominant-baseline:central}
 .gum{stroke:var(--tink);stroke-width:var(--tw)}.midl{stroke:var(--tink);stroke-dasharray:6 8;stroke-width:2}
 body[data-v="4"] .teeth{shape-rendering:crispEdges}
@@ -63,7 +63,7 @@ body[data-v="3"] .hd{fill:var(--fig)}body[data-v="3"] .bd{stroke-width:4}
 body[data-v="4"] .hd{display:none}body[data-v="4"] .hs{display:inline}body[data-v="4"] .bd{stroke:var(--c);stroke-width:4;stroke-linecap:square}body[data-v="4"] .p svg{shape-rendering:crispEdges}
 body[data-v="5"] .bd{stroke:var(--c);stroke-width:3.5}body[data-v="5"] .sh{display:inline}
 .nm{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:12px;white-space:nowrap;display:none;color:var(--nm,var(--ink));font-weight:700}
-body[data-v="4"] .nm{font-size:8px}
+
 .p:hover .nm,.p.hi .nm,.p:focus-visible .nm{display:block}
 .p.hi svg{filter:drop-shadow(0 0 5px var(--acc)) drop-shadow(0 0 2px var(--acc))}
 .p.old{opacity:.3;filter:grayscale(1)}.p.old.hi{opacity:.75}
@@ -86,11 +86,11 @@ body[data-v="4"] .p.sad .hd{display:none}
 .p.pb .b::after{background:#ffe9a6;border-color:#d9a400}
 .p.pb .b::before{content:"точка Б";display:block;font-size:11px;font-weight:700;letter-spacing:.02em;opacity:.7;margin-bottom:2px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.9em;color:var(--mute);margin:0}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:2px solid}
-body[data-v="1"] .b{font-size:17px;border-radius:22px 16px 20px 14px}
+body[data-v="1"] .b{border-radius:22px 16px 20px 14px}
 body[data-v="2"] .b{border-width:3px;font-weight:500;border-radius:20px}
 body[data-v="2"] .fight .b{background:#fff0a8;border-color:#1d1d1d}
 body[data-v="3"] .b{border-radius:4px;border-width:1px}
-body[data-v="4"] .b{font-size:9px;line-height:1.6;border-radius:0;border-width:3px;box-shadow:4px 4px 0 #0f0c1a}
+body[data-v="4"] .b{border-radius:0;border-width:3px;box-shadow:4px 4px 0 #0f0c1a}
 body[data-v="4"] .b::after{border-width:3px}
 body[data-v="5"] .b{border-width:1px;box-shadow:0 6px 18px rgba(20,24,40,.12)}
 .card{position:absolute;top:12px;right:12px;z-index:400;width:min(270px,calc(100% - 24px));background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:var(--r,14px);padding:14px 16px;display:grid;gap:6px;font-size:14px}
@@ -181,8 +181,23 @@ const mk=(d,kind)=>{const bot=kind===true,sad=kind=='sad';
   p.el=el;p.b=el.querySelector('.b');A.append(el);return p};
 
 let P=[],act=[],old=[],bot=null,DATA=DEMO,sel=null;
-const target=p=>{if(p.lock)return;p.tx=.04+Math.random()*.92;
-  p.ty=sel?(p.hi?.72+Math.random()*.26:.22+Math.random()*.3):.25+Math.random()*.72};
+/* зона сценки (доли ширины и высоты): пока идёт сценка, туда никто не заходит */
+let zone=null;
+const candidate=p=>{
+  let x=.04+Math.random()*.92,y=sel?(p.hi?.72+Math.random()*.26:.22+Math.random()*.3):.25+Math.random()*.72;
+  if(zone){ // остаёмся со своей стороны зоны, чтобы не идти сквозь неё
+    const roomL=zone.l-.04,roomR=.96-zone.r,leftSide=p.x<(zone.l+zone.r)/2;
+    if(leftSide&&roomL>.06||!leftSide&&roomR<=.06&&roomL>.06)x=.04+Math.random()*roomL;
+    else if(roomR>.06)x=zone.r+Math.random()*roomR;
+    else y=zone.b+Math.random()*Math.max(.02,.98-zone.b); // по бокам места нет: встаём спереди
+  }
+  return {x,y}};
+/* человечки выбирают место подальше от других, чтобы не толпиться */
+const target=p=>{if(p.lock)return;let best=null,bd=-1;
+  for(let k=0;k<7;k++){const c=candidate(p);let d=1e9;
+    for(const o of P){if(o===p||o.old||o.bot||o.sad)continue;d=Math.min(d,Math.hypot((o.tx-c.x)*AW,(o.ty-c.y)*AH*.7),Math.hypot((o.x-c.x)*AW,(o.y-c.y)*AH*.7))}
+    if(d>bd){bd=d;best=c}}
+  p.tx=best.x;p.ty=best.y};
 const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
   const fy=104+p.y*(AH-118),bob=p.moving&&!RM?Math.abs(Math.sin(p.walk/110))*3:0;
   p.el.style.transform=`translate(${(p.x*AW-20).toFixed(1)}px,${(fy-84-bob).toFixed(1)}px)`;
@@ -192,63 +207,80 @@ let last=performance.now();
 const tick=t=>{const dt=Math.min(50,t-last);last=t;
   for(const p of P){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
     if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
-    else if(d>.004){const v=Math.min(p.sp*dt,d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
+    else if(d>.004){const v=Math.min(p.sp*dt*(!p.lock&&zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b?3.5:1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
     else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+800+Math.random()*3800;else if(t>p.next){p.next=0;target(p)}}}
     place(p)}
   requestAnimationFrame(tick)};
 
 const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','react'].forEach(k=>p.el.classList.toggle(k,kind==k));
   clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','react'),ms)};
-const free=()=>act.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&(!sel||p.hi)&&p.q.length);
-/* одиночные фразы из чата: только между сценками */
-const speak=p=>say(p,rnd(p.q),3400);
+/* сколько держать бабл, чтобы успеть прочитать: от длины фразы */
+const readMs=t=>Math.min(6500,Math.max(2400,1500+String(t).length*55));
 
-/* Режиссёр: сценки идут строго по одной. Перепалка из чата, точка Б с грустнолицым, визит бота.
-   Пока идёт сценка, остальные собираются полукругом спереди и по бокам и смотрят. */
+/* Режиссёр. Случайной болтовни нет: на площадке идёт одна сценка за раз, потом тишина.
+   Сценки: перепалка из чата, монолог, точка Б с грустнолицым, визит бота.
+   Вокруг сценки пусто: остальные гуляют по краям и в зону не заходят. */
 let scene=false;
-const gather=(cast,cx,cy)=>{
-  const crowd=act.filter(p=>!cast.includes(p)&&!p.lock&&(!sel||p.hi));
-  crowd.forEach((p,i)=>{p.lock=true;
-    const t=crowd.length>1?i/(crowd.length-1):.5,ang=Math.PI*(-.08+1.16*t); // от правого бока через перед к левому
-    p.tx=Math.min(.96,Math.max(.04,cx+Math.cos(ang)*(.2+Math.random()*.06)));p.ty=Math.min(.98,cy+.1+Math.sin(ang)*.3)});
-  return crowd};
-const release=ps=>ps.forEach(p=>{if(p.sad)return;p.lock=false;p.next=0});
-const cheer=crowd=>{const R=DATA.react||[];return R.length?setInterval(()=>{const w=crowd.filter(p=>!p.el.classList.contains('talk'));if(w.length)say(rnd(w),rnd(R),1500,'react')},2300):0};
+const zoneHit=p=>zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b;
+const clear=(cast,cx,cy)=>{
+  const hw=Math.max(.2,125/Math.max(AW,1));
+  zone={l:cx-hw,r:cx+hw,t:0,b:Math.min(.95,cy+.16)};
+  const others=act.filter(p=>!cast.includes(p)&&!p.lock);
+  others.forEach(p=>{p.next=0;target(p)}); // кто стоял в зоне, быстро уходит на свою сторону
+  return others};
+const release=ps=>{zone=null;ps.forEach(p=>{if(p.sad)return;p.lock=false;p.next=0})};
+/* реплики, одна за другой, каждая столько, сколько её читать; возвращает общее время */
+const play=(lines,start)=>{let t=start;
+  lines.forEach(([p,txt,kind])=>{const ms=readMs(txt);setTimeout(()=>say(p,txt,ms,kind),t);t+=ms+250});
+  return t};
+/* толпа изредка отзывается: не больше двух реплик за сценку, и только в паузе между репликами */
+const cheerAt=(crowd,times)=>{const R=DATA.react||[];if(!R.length)return;
+  times.forEach(t=>setTimeout(()=>{const w=crowd.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&!zoneHit(p)&&(!sel||p.hi));if(w.length)say(rnd(w),rnd(R),1600,'react')},t))};
+const spot=()=>({cx:.3+Math.random()*.4,cy:.42+Math.random()*.12});
 
 const fightScene=done=>{const f=rnd(DATA.fights);
   const cnt={};f.forEach(([w])=>cnt[w]=(cnt[w]||0)+1);
   const cast=Object.keys(cnt).map(Number).sort((x,y)=>cnt[y]-cnt[x]).map(i=>P[i]);
   if(cast.some(p=>!p||p.old||p.lock)||(sel&&!cast.every(p=>p.hi)))return done(300);
-  const cx=.3+Math.random()*.4,cy=.42+Math.random()*.12;
-  cast.forEach((p,i)=>{p.lock=true;p.tx=i==0?cx-.07:i==1?cx+.07:cx+(i%2?.16:-.16);p.ty=i<2?cy:cy+.08});
-  const crowd=gather(cast,cx,cy),T0=2600,STEP=2000;
-  f.forEach(([who,l],i)=>setTimeout(()=>say(P[who],l,STEP+200,'fight'),T0+i*STEP));
-  const c=cheer(crowd);
-  setTimeout(()=>{clearInterval(c);release([...cast,...crowd]);done(1800)},T0+f.length*STEP+900)};
+  const {cx,cy}=spot(),gap=Math.max(.07,34/Math.max(AW,1));
+  cast.forEach((p,i)=>{p.lock=true;p.tx=i==0?cx-gap:i==1?cx+gap:cx+(i%2?2.2:-2.2)*gap;p.ty=i<2?cy:cy+.08});
+  const crowd=clear(cast,cx,cy);
+  const end=play(f.map(([who,l])=>[P[who],l,'fight']),3200);
+  if(f.length>=4&&Math.random()<.6)cheerAt(crowd,[3200+(end-3200)*.55]);
+  setTimeout(()=>{release(cast);done(3000)},end+700)};
 
-/* грустнолицый: «папа», «мама», «альфа-жертва»… студент говорит ему фразу точки Б */
+/* монолог: человек выходит в центр и говорит пару своих фраз из чата */
+const soloScene=done=>{const c=act.filter(p=>p.q.length>=2&&!p.lock&&(!sel||p.hi));if(!c.length)return done(300);
+  const p=rnd(c),{cx,cy}=spot(),q=[...p.q].sort(()=>Math.random()-.5).slice(0,2);
+  p.lock=true;p.tx=cx;p.ty=cy;
+  clear([p],cx,cy);
+  const end=play(q.map(t=>[p,t]),3000);
+  setTimeout(()=>{release([p]);done(3000)},end+500)};
+
+/* грустнолицый: «папа», «мама», «альфа-жертва»… студент говорит ему фразу точки Б; все молчат */
 const pbScene=done=>{const c=act.filter(p=>p.pb.length&&!p.lock&&(!sel||p.hi));if(!c.length)return done(300);
   const p=rnd(c),[to,txt]=rnd(p.pb),angry=/!/.test(txt)||MATRE.test(txt);
-  const cx=.3+Math.random()*.4,cy=.42+Math.random()*.12,left=Math.random()<.5;
+  const {cx,cy}=spot(),left=Math.random()<.5,gap=Math.max(.07,34/Math.max(AW,1));
   const s=mk({n:to,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.toggle('angry',angry);
-  s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-.07:.07);s.sp=.0002;P.push(s);
-  p.lock=true;p.tx=cx+(left?.07:-.07);p.ty=cy;
-  const crowd=gather([p],cx,cy); // на точке Б толпа молчит и слушает
-  setTimeout(()=>say(p,txt,5200,'pb'),3600);
-  setTimeout(()=>{s.tx=left?-.14:1.14;release([p,...crowd])},9400);
-  setTimeout(()=>{s.el.remove();P.splice(P.indexOf(s),1);done(800)},12500)};
+  s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-gap:gap);s.sp=.0002;P.push(s);
+  p.lock=true;p.tx=cx+(left?gap:-gap);p.ty=cy;
+  clear([p],cx,cy);
+  const end=play([[p,txt,'pb']],3600)+1200;
+  setTimeout(()=>{s.tx=left?-.14:1.14;release([p])},end);
+  setTimeout(()=>{s.el.remove();P.splice(P.indexOf(s),1);done(2500)},end+3000)};
 
 const botScene=done=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
-  setTimeout(()=>say(bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot),4600),3200);
-  setTimeout(()=>{bot.tx=1.14},8200);setTimeout(()=>done(400),9000)};
+  const end=play([[bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot)]],3200);
+  setTimeout(()=>{bot.tx=1.14},end+300);setTimeout(()=>done(2500),end+1200)};
 
 const director=()=>{if(scene)return setTimeout(director,2000);
   const opts=[];
   if(DATA.fights.length)opts.push(fightScene,fightScene,fightScene);
+  if(act.some(p=>p.q.length>=2))opts.push(soloScene);
   if(act.some(p=>p.pb.length))opts.push(pbScene,pbScene);
   opts.push(botScene);
   scene=true;
-  rnd(opts)(pause=>{scene=false;setTimeout(director,pause+Math.random()*1500)})};
+  rnd(opts)(pause=>{scene=false;setTimeout(director,pause+Math.random()*2000)})};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
@@ -279,9 +311,8 @@ const start=d=>{DATA=d;
   const upd=d.updated?new Date(d.updated).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'}):null;
   $('#cnt').textContent=d.demo?'Демо: живые данные не загрузились':`${act.length} сейчас · ${old.length} в прошлом · обновлено ${upd}`;
   info();requestAnimationFrame(tick);
-  setInterval(()=>{if(scene)return;const c=free();if(c.length)speak(rnd(c))},1300);
-  setTimeout(director,2500);
-  setTimeout(()=>{const c=free();for(let i=0;i<3&&c.length;i++)speak(c.splice(Math.floor(Math.random()*c.length),1)[0])},300)};
+  setTimeout(director,1200);
+};
 fetch('data/live.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>d.people&&d.people.length?d:DEMO).catch(()=>DEMO).then(start);
 
 /* варианты */
