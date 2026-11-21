@@ -217,8 +217,10 @@ const tick=t=>{const dt=Math.min(50,t-last);last=t;
 
 const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','react'].forEach(k=>p.el.classList.toggle(k,kind==k));
   clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','react'),ms)};
-/* сколько держать бабл, чтобы успеть прочитать: от длины фразы */
-const readMs=t=>Math.min(6500,Math.max(2400,1500+String(t).length*55));
+/* сколько держать бабл: никуда не торопимся.
+   Одиночная фраза (монолог, точка Б, бот) висит ~10 секунд, реплика в диалоге ~5 секунд; длинные чуть дольше. */
+const readMs=(t,mode)=>{const n=String(t).length;
+  return mode=='dialog'?Math.min(7500,Math.max(5000,3000+n*40)):Math.min(13000,Math.max(10000,7000+n*50))};
 
 /* Режиссёр. Случайной болтовни нет: на площадке идёт одна сценка за раз, потом тишина.
    Сценки: перепалка из чата, монолог, точка Б с грустнолицым, визит бота.
@@ -233,12 +235,12 @@ const clear=(cast,cx,cy)=>{
   return others};
 const release=ps=>{zone=null;ps.forEach(p=>{if(p.sad)return;p.lock=false;p.next=0})};
 /* реплики, одна за другой, каждая столько, сколько её читать; возвращает общее время */
-const play=(lines,start)=>{let t=start;
-  lines.forEach(([p,txt,kind])=>{const ms=readMs(txt);setTimeout(()=>say(p,txt,ms,kind),t);t+=ms+250});
+const play=(lines,start,mode)=>{let t=start;
+  lines.forEach(([p,txt,kind])=>{const ms=readMs(txt,mode);setTimeout(()=>say(p,txt,ms,kind),t);t+=ms+(mode=='dialog'?400:900)});
   return t};
 /* толпа изредка отзывается: не больше двух реплик за сценку, и только в паузе между репликами */
 const cheerAt=(crowd,times)=>{const R=DATA.react||[];if(!R.length)return;
-  times.forEach(t=>setTimeout(()=>{const w=crowd.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&!zoneHit(p)&&(!sel||p.hi));if(w.length)say(rnd(w),rnd(R),1600,'react')},t))};
+  times.forEach(t=>setTimeout(()=>{const w=crowd.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&!zoneHit(p)&&(!sel||p.hi));if(w.length)say(rnd(w),rnd(R),3000,'react')},t))};
 const spot=()=>({cx:.3+Math.random()*.4,cy:.42+Math.random()*.12});
 
 const fightScene=done=>{const f=rnd(DATA.fights);
@@ -248,8 +250,8 @@ const fightScene=done=>{const f=rnd(DATA.fights);
   const {cx,cy}=spot(),gap=Math.max(.07,34/Math.max(AW,1));
   cast.forEach((p,i)=>{p.lock=true;p.tx=i==0?cx-gap:i==1?cx+gap:cx+(i%2?2.2:-2.2)*gap;p.ty=i<2?cy:cy+.08});
   const crowd=clear(cast,cx,cy);
-  const end=play(f.map(([who,l])=>[P[who],l,'fight']),3200);
-  if(f.length>=4&&Math.random()<.6)cheerAt(crowd,[3200+(end-3200)*.55]);
+  const end=play(f.map(([who,l])=>[P[who],l,'fight']),3200,'dialog');
+  if(f.length>=4&&Math.random()<.6)cheerAt(crowd,[3200+(end-3200)*.55]); // отклик толпы ~3 с
   setTimeout(()=>{release(cast);done(3000)},end+700)};
 
 /* монолог: человек выходит в центр и говорит несколько своих сообщений, написанных подряд;
