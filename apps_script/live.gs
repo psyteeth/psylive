@@ -97,7 +97,8 @@ function readInput_() {
   var months = SpreadsheetApp.openById(CONFIG.EFIRY_ID).getSheets().map(function (s) {
     return { name: s.getName().replace(/\s+/g, ' ').trim().toUpperCase(), display: s.getDataRange().getDisplayValues() };
   });
-  return { msgs: msgs, champ: champ, months: months, current: cur };
+  // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
+  return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {} };
 }
 
 // ---------- чистая логика (её же гоняет test/run.js в node) ----------
@@ -151,7 +152,7 @@ function efirNames_(display) {
       if (!/^\s*\d{1,2}:\d{2}\s*$/.test(display[r][c])) continue;
       String(display[r][c + 1] || '').split(',').forEach(function (p) {
         var n = norm_(p);
-        if (n && !EFIR_JUNK.test(n) && !MAT.test(n)) out[n] = 1;
+        if (n && n.length >= 3 && !EFIR_JUNK.test(n) && !MAT.test(n)) out[n] = 1;
       });
     }
   }
@@ -248,7 +249,19 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (memo[mk] !== undefined) return memo[mk];
     return (memo[mk] = matchNew(toks, create));
   }
+  var aliases = {};
+  Object.keys(inp.aliases || {}).forEach(function (k) { aliases[norm_(k)] = String(inp.aliases[k] || '').trim(); });
   function matchNew(toks, create) {
+    // прозвище из словаря: «янка панамка» → @ник или другое имя
+    var al = aliases[toks.join(' ')];
+    if (al) {
+      if (al.charAt(0) === '@') {
+        var u = al.slice(1).toLowerCase(), byUser = list.filter(function (p) { return p.user === u; })[0];
+        if (byUser) return byUser;
+      } else if (norm_(al) !== toks.join(' ')) {
+        return match(al, create);
+      }
+    }
     var first = toks[0], canon = DIM[first] || first, rest = toks[1] || '';
     var lats = latVariants_(canon);
     function hit(p) {
