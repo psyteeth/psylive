@@ -465,10 +465,28 @@ function buildLive_(inp, nowMs, salt, hash) {
 
   // последняя защита от настоящих имён и ников во фразах
   var stems = realNames.filter(function (t) { return t && t.length >= 3; }).map(function (t) { return t.length >= 5 ? t.slice(0, -1) : t; });
+  // Имена в обращениях: «Янка», «Лер, скажи», «Оль,», «Тань». Формы имён участников (и уменьшительные
+  // из DIM) ловятся, если слово с заглавной буквы или после него запятая или тире.
+  var firsts = {};
+  realNames.concat(Object.keys(DIM)).forEach(function (n) {
+    n = String(n || '').toLowerCase().replace(/ё/g, 'е');
+    if (n.length < 3) return;
+    var canon = DIM[n] || n;
+    if (!real[canon] && !real[n] && !people.some(function (p) { return p.first === canon || p.first === n; })) return;
+    [n, canon].forEach(function (x) {
+      firsts[x] = 1;
+      if (/[ая]$/.test(x) && x.length >= 4) { firsts[x.slice(0, -1)] = 1; firsts[x.slice(0, -1) + 'ь'] = 1; } // Лера → Лер, Оля → Оль
+    });
+  });
   function safe(t) {
     var w = norm_(t).split(' ');
     for (var i = 0; i < w.length; i++) {
       for (var j = 0; j < stems.length; j++) if (w[i] === stems[j] || (stems[j].length >= 4 && w[i].indexOf(stems[j]) === 0)) return false;
+    }
+    var re = /([А-ЯЁа-яё]+)(\s*[,—–-])?/g, m;
+    while ((m = re.exec(String(t)))) {
+      var word = m[1], low = word.toLowerCase().replace(/ё/g, 'е');
+      if (firsts[low] && (word.charAt(0) !== low.charAt(0) || m[2])) return false;
     }
     return true;
   }
