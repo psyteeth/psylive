@@ -26,7 +26,7 @@ GS = ROOT / "apps_script" / "live.gs"
 TOOTH_RE = re.compile(r"^[1-4][1-8]$")
 UPDATED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 BAD_TEXT_RE = re.compile(r"https?:|www\.|@\w|#|\d{5,}")
-STATS_KEYS = {"efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs", "self_teeth", "nick_teeth"}
+STATS_KEYS = {"blocks", "efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs", "self_teeth", "nick_teeth"}
 
 
 class Bad(Exception):
@@ -128,6 +128,9 @@ def clean(raw, pools):
     if not isinstance(bot, list) or len(bot) > 40:
         raise Bad("bot")
     stats = raw.get("stats") or {}
+    blocks = stats.pop("blocks", {}) if isinstance(stats, dict) else {}
+    if not isinstance(blocks, dict) or not all(isinstance(k, str) and re.fullmatch(r"[a-z]{2,12}", k) and isinstance(v, int) for k, v in blocks.items()):
+        raise Bad("stats.blocks")
     if not isinstance(stats, dict) or set(stats) - STATS_KEYS or not all(isinstance(v, int) and 0 <= v < 10**6 for v in stats.values()):
         raise Bad("stats")
     return {
@@ -137,7 +140,7 @@ def clean(raw, pools):
         "solo": out_s,
         "react": [text_ok(x, 40, "react") for x in react],
         "bot": [text_ok(x, 130, "bot") for x in bot],
-        "stats": stats,
+        "stats": {**stats, "blocks": blocks},
     }
 
 

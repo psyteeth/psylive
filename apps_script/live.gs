@@ -30,7 +30,14 @@ var CONFIG = {
   // true: люди из эфиров, которых нет в чате и в словаре прозвищ, тоже стоят на площадке; false: их нет
   KEEP_UNMATCHED_EFIR: false,
   // чьи сообщения — реплики бота на площадке (имя автора или ник). Остальные боты игнорируются.
-  BOT_MATCH: /джузеппе|giuseppe/i
+  BOT_MATCH: /джузеппе|giuseppe/i,
+  // базовый блок фраз: что звучит на площадке (разметка владельца 21.11.2026).
+  // keep — берём, maybe — берём, но ниже в очереди, drop — не берём (кроме PHRASE_KEEP в «Прозвищах»)
+  BLOCKS: {
+    keep: ['heavy', 'rage', 'result', 'sex', 'teeth', 'school', 'clash', 'question'],
+    maybe: ['self', 'complain'],
+    drop: ['logistics', 'warm', 'family', 'work', 'jabfun', 'laugh', 'react', 'other']
+  }
 };
 
 // Ники. Те же списки читает scripts/fetch_live.py: ник не из списка не пройдёт проверку.
@@ -119,7 +126,8 @@ function readInput_() {
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
   return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
     nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [],
-    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {} };
+    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {},
+    phraseKeep: typeof PHRASE_KEEP !== 'undefined' ? PHRASE_KEEP : [], phraseDrop: typeof PHRASE_DROP !== 'undefined' ? PHRASE_DROP : [] };
 }
 
 // ---------- чистая логика (её же гоняет test/run.js в node) ----------
@@ -217,7 +225,66 @@ function clean_(t, maxLen, pinned) {
   if (!pinned && /[^.!?…]\s[А-ЯЁA-Z][а-яёa-z]+/.test(t.replace(/^[^А-ЯЁA-Zа-яёa-z]+/, ''))) return null;
   if (PERSONAL.test(t)) return null;                                   // адрес, телефон, карта, банк
   if (SURNAME.test(t)) return null;                                    // слово с заглавной, похожее на фамилию
+  if (!pinned && hasCommonName_(t)) return null;                       // «Руслан, …», «Ленка» — обращение к кому-то
   return t;
+}
+
+// ---------- блоки фраз ----------
+var YOU_RE = /(^|[^а-яё])(ты|тебе|тебя|тобой|твой|твоя|вы|вам|вас|ваш)(?![а-яё])/i;
+var ME_RE = /(^|[^а-яё])(я|мне|меня|мой|моя|мои|мной)(?![а-яё])/i;
+var JAB_RE = /ху[йеёяи]|пизд|бля|[её]б[ауилн]|сук[аи]|жоп|охуе|нахер|хрен|долбо|туп[аоы]|дур[аы]|идиот|мудак/i;
+var SMILE_RE = /\)\)|😂|🤣|😁|😆|😋|😅|🙈|😜|😏|ахах|хаха/i;
+// порядок важен: фраза попадает в первый подходящий блок
+var BLOCK_RULES = [
+  ['heavy', /суицид|умер|смерт|(?<![а-яё])рак(?![а-яё])|онколог|больниц|диагноз|беремен|аборт|выкидыш|насил|избил|похорон|депресс|таблет|температур|рвот|понос|блев|мигрен/i],
+  ['logistics', /запиш|записал|во сколько|ссылк|расписан|слот|перенес|в календар|завтра в \d|в \d{1,2}[:.]\d\d|кто (идёт|будет)|созвон|планы\)/i],
+  ['rage', /ненавиж|ебашили|уязвим|лупил|бил[аи]? меня|издевал|предал|больно мне|как тебе больно/i],
+  ['result', /получил|получилось|сработал|смогл|впервые|наконец|сказал[аи]? (маме|папе|мужу|отцу|матери|начальник)|не болит|перестал[аи]? болеть|отпустил|полегчал|стало легче|сдал[аи]? зач|победил|в руководител|повысил|помирил|выдохнул|работает!/i],
+  ['warm', /спасибо|благодар|люблю|обнима|поддерж|вы лучшие|рад[аы]? за|горжусь|ценю|родн(ые|ая|ой)|❤|🥹|🤗|💕|💖|обожаю|солнышко|скучаю|соскучил/i],
+  ['sex', /секс|трах|поеба|ебаться|кончаю|кончил|сиськ|сисяст|письк|член|оральн|мастурб|голая|грудь|мужчина гладит|жопошно/i],
+  ['family', /мам[аеуы]|пап[аеуы]|отец|отца|мать|матер|муж[аеу]?(?![а-яё])|мужем|жена|свекр|тёщ|теща|сестр|брат|сын|доч|реб[её]н|дет[иья]|родител|бывш|подруг/i],
+  ['teeth', /зуб|(?<![а-яё])\d\dй|челюст|десн|стоматолог|пломб|клык|резец|моляр|коронк|имплант|зареагировал/i],
+  ['school', /(?<![а-яё])ср(?![а-яё])|саморегуляц|зач[её]т|пыхт|дракон|альфа|жертв|кунг|зкф|практик|листоч|точк[аеу] [аб]|оракул|экспрес|уебищн|бот чат|анализир|на сборе/i],
+  ['work', /клиент|работ[аеуы]|деньг|денег|денежн|зарплат|начальник|рилс|инст|блог|бизнес|продаж|заказ|руковод|увол/i],
+  ['jabfun', function (t) { return YOU_RE.test(t) && SMILE_RE.test(t); }],
+  ['clash', function (t) { return YOU_RE.test(t) && (JAB_RE.test(t) || t.indexOf('!') >= 0); }],
+  ['self', function (t) { return ME_RE.test(t) && (SMILE_RE.test(t) || /😵|🔥|\)/.test(t)); }],
+  ['laugh', /\)\)|😂|🤣|😁|😆|😋|😅|🙈|😜|😏|ахах|хаха|ору(?![а-яё])|ржу|угар|прикол|ржака/i],
+  ['question', /\?\s*$/],
+  ['complain', /устал|заебал|достал|бесит|надоел|тошн|сил нет|не могу больше|грустн|плачу|обидн|страшн|тревог|херово|хуёво|хуево|смущает/i],
+  ['react', /^.{0,25}$/]
+];
+function blockOf_(t) {
+  for (var i = 0; i < BLOCK_RULES.length; i++) {
+    var r = BLOCK_RULES[i][1];
+    if (typeof r === 'function' ? r(t) : r.test(t)) return BLOCK_RULES[i][0];
+  }
+  return 'other';
+}
+/** Текст для сверки с исключениями: без ников-подписей «Ампаро:», знаков и регистра. */
+function normX_(t) {
+  return String(t || '').replace(/(^|[|\n/])\s*[А-ЯЁ][а-яё]+(?: \d)?:\s/g, ' ').toLowerCase().replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9]+/g, ' ').trim();
+}
+
+// Обычные русские имена: обращение к человеку не из чата («Руслан, а ты…») тоже не показываем.
+// Имена-слова (Вера, Надежда, Любовь, Роман, Лев, Слава, Роза, Лилия) не включены.
+var COMMON_NAMES = {};
+('александр саша саня алексей леша лёша андрей антон артем артём борис вадим валентин валерий василий вася виктор витя виталий владимир вова володя владислав влад вячеслав геннадий гена георгий гоша григорий гриша даниил данила денис дмитрий дима евгений женя егор иван ваня игорь илья кирилл константин костя максим макс михаил миша никита николай коля олег павел паша петр петя руслан сергей сережа серега станислав стас степан тимур тимофей федор федя эдуард юрий юра ярослав ' +
+ 'александра алена алёна алина алла анастасия настя ангелина анна аня анька валентина валерия лера варвара галина галя дарья даша диана ева евгения екатерина катя катька елена лена елизавета лиза жанна зоя инна ирина ира карина кристина ксения ксюша ксюха лариса лидия лида людмила люда маргарита рита марина мария маша надя наталья наташа нина оксана ольга оля полина раиса светлана света софия соня таисия тамара татьяна таня ульяна юлия юля яна ян янка людка ленка ирка танька наташка маринка светка оленька юлька ксюшка галька'
+).split(' ').forEach(function (n) { COMMON_NAMES[n.replace(/ё/g, 'е')] = 1; });
+function hasCommonName_(t) {
+  var re = /([А-ЯЁа-яё]+)(\s*[,—–-])?/g, m;
+  while ((m = re.exec(String(t)))) {
+    var w = m[1], low = w.toLowerCase().replace(/ё/g, 'е');
+    if (w.charAt(0) === low.charAt(0) && !m[2]) continue;           // строчное слово без запятой — не обращение
+    if (COMMON_NAMES[low]) return true;                                // «Руслан», «Ира,»
+    // усечённые и падежные формы («Людк,», «Ян,», «Оль,») — только как обращение, с запятой или тире:
+    // иначе «Надо» путается с «Надя»
+    if (m[2] && (COMMON_NAMES[low + 'а'] || COMMON_NAMES[low + 'я'] || COMMON_NAMES[low.slice(0, -1)] ||
+        COMMON_NAMES[low.slice(0, -1) + 'а'] || COMMON_NAMES[low.slice(0, -1) + 'я'] || /к$/.test(low) && COMMON_NAMES[low.slice(0, -1) + 'а'])) return true;
+  }
+  return false;
 }
 
 // с этих слов начинаются реплики, которые без предыдущего сообщения непонятны
@@ -521,11 +588,35 @@ function buildLive_(inp, nowMs, salt, hash) {
     });
     return out;
   }
-  function pickChat(arr) { // в чате берём фразы, понятные без контекста: от первого лица, законченные
+  // Базовый блок: решение по блоку фразы (CONFIG.BLOCKS) плюс исключения из разметки (PHRASE_KEEP / PHRASE_DROP).
+  var KEEPX = (inp.phraseKeep || []).map(normX_).filter(function (x) { return x.length >= 6; });
+  var DROPX = (inp.phraseDrop || []).map(normX_).filter(function (x) { return x.length >= 6; });
+  function inList(t, L) {
+    var n = normX_(t);
+    if (n.length < 6) return false;
+    for (var i = 0; i < L.length; i++) if (L[i] === n || L[i].indexOf(n) >= 0 || (L[i].length >= 40 && n.indexOf(L[i]) === 0)) return true;
+    return false;
+  }
+  var RANK = {};
+  CONFIG.BLOCKS.keep.forEach(function (b) { RANK[b] = 2; });
+  CONFIG.BLOCKS.maybe.forEach(function (b) { RANK[b] = 1; });
+  stats.blocks = {};
+  /** 3 — исключение «оставить», 2 — блок keep, 1 — maybe, 0 — не берём. */
+  function rankOf(t) {
+    if (inList(t, DROPX)) return 0;
+    if (inList(t, KEEPX)) return 3;
+    return RANK[blockOf_(t)] || 0;
+  }
+  function pickChat(arr) { // фразы базового блока: блок с решением «оставить» или исключение, понятнее — выше
     var out = [], seen = {};
-    arr.map(function (x) { var t = clean_(addr_(x.text).body, 110); return t && safe(t) ? { t: t, s: sense_(t), ms: x.ms || 0 } : null; })
-      .filter(function (x) { return x && x.s >= 3; })
-      .sort(function (a, b) { return b.s - a.s || b.ms - a.ms; })
+    arr.map(function (x) {
+      var t = clean_(addr_(x.text).body, 140);
+      if (!t || !safe(t)) return null;
+      var b = blockOf_(t); stats.blocks[b] = (stats.blocks[b] || 0) + 1;   // сколько фраз в каком блоке
+      return { t: t, r: rankOf(t), s: sense_(t), ms: x.ms || 0 };
+    })
+      .filter(function (x) { return x && x.r > 0 && (x.r === 3 || x.s >= 1); })
+      .sort(function (a, b) { return b.r - a.r || b.s - a.s || b.ms - a.ms; })
       .forEach(function (x) { if (out.length < 20 && !seen[x.t]) { seen[x.t] = 1; out.push(x.t); } });
     return out;
   }
@@ -563,7 +654,10 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (lines.length < 3) continue;
     if (s0 === 0 || !seq[s0 - 1].ms || seq[s0].ms - seq[s0 - 1].ms > GAP) score += 2; // разговор начался с нуля
     var avg = score / lines.length;
-    if (avg >= 1.5) cands.push({ lines: lines, score: score, ms: seq[s0].ms });
+    var ranks = lines.map(function (l) { return rankOf(l[1]); });
+    var forced = ranks.indexOf(3) >= 0, dropped = lines.some(function (l) { return inList(l[1], DROPX); });
+    var okLines = ranks.filter(function (r) { return r > 0; }).length;
+    if (!dropped && (forced || (avg >= 1.5 && okLines * 2 >= lines.length))) cands.push({ lines: lines, score: score + (forced ? 100 : 0), ms: seq[s0].ms });
     s0 = e - 1;
   }
   var fights = cands.sort(function (a, b) { return b.score - a.score || b.ms - a.ms; }).slice(0, 40).map(function (c) { return c.lines; });
@@ -574,13 +668,15 @@ function buildLive_(inp, nowMs, salt, hash) {
     var who = seq[k0].p, run = [], k = k0;
     if (!idx.has(who) || !seq[k0].ms) continue;
     while (k < seq.length && seq[k].p === who && run.length < 3 && (k === k0 || seq[k].ms - seq[k - 1].ms <= GAP)) {
-      var tt = clean_(seq[k].body, 110);
+      var tt = clean_(seq[k].body, 140);
       if (!tt || !safe(tt)) { run = []; break; }
       run.push(tt); k++;
     }
     if (run.length >= 2 && run.join(' ').length <= 230) {
       var sc = run.reduce(function (acc, x) { return acc + sense_(x); }, 0) / run.length;
-      if (sc >= 2) solos.push({ i: idx.get(who), lines: run, score: sc, ms: seq[k0].ms });
+      var rr = run.map(rankOf), forcedS = rr.indexOf(3) >= 0, droppedS = run.some(function (x) { return inList(x, DROPX); });
+      if (!droppedS && (forcedS || (sc >= 2 && rr.every(function (r) { return r > 0; }))))
+        solos.push({ i: idx.get(who), lines: run, score: sc + (forcedS ? 100 : 0), ms: seq[k0].ms });
     }
     k0 = Math.max(k0, k - 1);
   }
@@ -611,10 +707,11 @@ function buildLive_(inp, nowMs, salt, hash) {
   var react = [], seenR = {};
   seq.slice().reverse().forEach(function (m) {
     var t = String(m.text || '').replace(/\s+/g, ' ').trim();
-    if (react.length >= 60 || t.length < 2 || t.length > 24 || seenR[t.toLowerCase()]) return;
+    if (react.length >= 60 || t.length < 2 || t.length > 40 || seenR[t.toLowerCase()]) return;
     if (/https?:|www\.|@\w|#|\d{3,}/.test(t) || !/[а-яё]/i.test(t) || !safe(t)) return;
     if (/[^.!?…]\s[А-ЯЁA-Z][а-яёa-z]+/.test(t)) return;
     if (!(MAT.test(t) || /!|\)|😂|🤣|ах|ха|жесть|ору|ого|капец|о+х|ну+|да+/i.test(t))) return;
+    if (!inList(t, KEEPX) && !(RANK[blockOf_(t)] > 0)) return; // по разметке: блок «оставить» или исключение
     seenR[t.toLowerCase()] = 1;
     react.push(t);
   });
