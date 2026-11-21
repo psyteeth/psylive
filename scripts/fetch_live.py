@@ -112,6 +112,15 @@ def clean(raw, pools):
                 raise Bad(f"fights[{i}][{j}]: номер человека")
             line.append([who, text_ok(txt, 100, f"fights[{i}][{j}]")])
         out_f.append(line)
+    solo = raw.get("solo", [])
+    if not isinstance(solo, list) or len(solo) > 60:
+        raise Bad("solo")
+    out_s = []
+    for i, x in enumerate(solo):
+        if (not isinstance(x, list) or len(x) != 2 or not isinstance(x[0], int) or isinstance(x[0], bool)
+                or not 0 <= x[0] < len(out_people) or not isinstance(x[1], list) or not 1 <= len(x[1]) <= 3):
+            raise Bad(f"solo[{i}]")
+        out_s.append([x[0], [text_ok(t, 120, f"solo[{i}]") for t in x[1]]])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")
@@ -125,6 +134,7 @@ def clean(raw, pools):
         "updated": upd,
         "people": out_people,
         "fights": out_f,
+        "solo": out_s,
         "react": [text_ok(x, 40, "react") for x in react],
         "bot": [text_ok(x, 130, "bot") for x in bot],
         "stats": stats,
@@ -176,7 +186,7 @@ def main(argv=None):
     act = sum(not p["old"] for p in live["people"])
     print(f"fetch_live: ок, {live['updated']}: {act} сейчас, {len(live['people']) - act} в прошлом, "
           f"{sum(len(p['q']) for p in live['people'])} фраз, {sum(len(p['b']) for p in live['people'])} точек Б, "
-          f"{len(live['fights'])} перепалок; {live['stats']}")
+          f"{len(live['fights'])} перепалок, {len(live['solo'])} монологов; {live['stats']}")
     return 0
 
 

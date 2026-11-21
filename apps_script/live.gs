@@ -25,6 +25,8 @@ var CONFIG = {
   QUOTE_DAYS: 180,
   MSG_SHEET: 'Сообщения',
   CHAMP_SHEET: 'Чемпионат_лог',
+  // полный список имён и фамилий участников: всё отсюда вырезается из фраз
+  STATS_SHEET: 'СР_Статистика',
   // true: люди из эфиров, которых нет в чате и в словаре прозвищ, тоже стоят на площадке; false: их нет
   KEEP_UNMATCHED_EFIR: false
 };
@@ -43,6 +45,10 @@ var MALE_A = { 'илья': 1, 'никита': 1, 'серега': 1, 'дима': 
 var UNISEX = { 'саша': 1, 'женя': 1, 'валя': 1, 'пользователь': 1, 'sasha': 1 };
 // служебные пометки в ячейках эфиров, а не люди
 var EFIR_JUNK = /занято|эфир|очеред|будет|приходите|медит|медиид|медииа|бронь|отмен|перенос|свободн|резерв/;
+// личные данные во фразах
+var PERSONAL = /(?:^|[^а-яё])(?:улиц[аеуы]|ул\.|проспект|пр-т|дом\s*\d|кв\.|квартир[аеуы]\s*\d|телефон|номер\s+(?:карты|телефона)|карт[ауы]\s+\d|сбер|тинькофф|т-банк|альфа-?банк|паспорт|снилс|e-?mail|почт[ауы]\s)/i;
+// слово с заглавной буквы на типичное окончание фамилии (в любом падеже)
+var SURNAME = /(?:^|[^А-ЯЁа-яё])[А-ЯЁ][а-яё]{2,}(?:ов|ев|ёв|ин|ын|ск|цк|енк|ук|юк|ян|швил|дз|ович|евич|овн|евн)(?:а|у|ым|ой|ом|е|ых|им|ого|ому|ий|ая|ую|ие|о)?(?![а-яё])/;
 var MAT = /(?:ху[йеёяи]|пизд|бля|(?<![а-яё])(?:[её]бан|[её]бат|[её]бал|[её]бу|[её]бл|[её]би|ёб)|(?:за|на|у|вы|от|отъ|до|про|при|по|под|раз|съ)[её]б|сука|суки|сучк|жоп|говн|дерьм|залуп|муда[кч]|мудил|херн|хрен|нахер|похер|охуе|сран|срал|задолба)/i;
 
 function doGet() {
@@ -95,6 +101,11 @@ function readInput_() {
   var msgs = chats.getSheetByName(CONFIG.MSG_SHEET).getDataRange().getDisplayValues();
   var ch = chats.getSheetByName(CONFIG.CHAMP_SHEET);
   var champ = ch ? ch.getDataRange().getDisplayValues() : [];
+  var st = chats.getSheetByName(CONFIG.STATS_SHEET), people = [];
+  if (st) {
+    var sv = st.getDataRange().getDisplayValues(), ni = sv.length ? sv[0].map(function (h) { return String(h).trim().toLowerCase(); }).indexOf('имя') : -1;
+    if (ni >= 0) people = sv.slice(1).map(function (r) { return r[ni]; });
+  }
   var now = new Date();
   var cur = MONTHS[+Utilities.formatDate(now, CONFIG.TZ, 'M') - 1] + ' ' + Utilities.formatDate(now, CONFIG.TZ, 'yyyy');
   var months = SpreadsheetApp.openById(CONFIG.EFIRY_ID).getSheets().map(function (s) {
@@ -102,7 +113,8 @@ function readInput_() {
   });
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
   return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
-    nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [] };
+    nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [],
+    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [] };
 }
 
 // ---------- чистая логика (её же гоняет test/run.js в node) ----------
@@ -174,13 +186,51 @@ function efirNames_(display) {
   return Object.keys(out);
 }
 
+// Разгрузочная версия: мат пишем полностью. Слово, запиканное в чате («п***ц», «х*йня», «за*бали»),
+// сверяем со словарём: каждая «*» — от одной до четырёх букв. Нашлось — пишем словом целиком.
+var MAT_WORDS = ('пиздец пизда пизде пизду пиздой пиздато пиздеть пиздит пиздёж пиздеж хуй хуя хую хуем хуйня хуйню хуйни хуево хуёво ' +
+  'ахуеть охуеть охуенно охуенный охуела охуел охуели нахуй похуй блядь блять бля ебать ебал ебала ебали ебу ебёт ебет ебись ' +
+  'заебали заебал заебала заебало заебись наебал наебала выебываться выебывается выебнуться ебаный ебаная ебаное ебаные ёбаный ' +
+  'ебанутый ебанутая ебанулся отъебись уебок уёбок ебло сука суки сучка сучара нахер похер херня хер мудак мудаки').split(' ');
+function unmask_(t) {
+  return String(t || '').replace(/[А-ЯЁа-яё]*\*[А-ЯЁа-яё*]*/g, function (w) {
+    if ((w.match(/[а-яё]/gi) || []).length < 2) return w; // «2*2», «*» — не слово
+    var re = new RegExp('^' + w.toLowerCase().replace(/\*+/g, '[а-яё]{1,4}') + '$');
+    for (var i = 0; i < MAT_WORDS.length; i++) {
+      if (re.test(MAT_WORDS[i])) { var f = MAT_WORDS[i]; return w.charAt(0) === w.charAt(0).toUpperCase() && w.charAt(0) !== '*' ? f.charAt(0).toUpperCase() + f.slice(1) : f; }
+    }
+    return w;
+  });
+}
+
 /** Фраза годится для бабла: короткая, без ссылок, ников, телефонов и чужих имён посреди фразы. */
 function clean_(t, maxLen) {
-  t = String(t || '').replace(/\s+/g, ' ').trim();
+  t = unmask_(String(t || '')).replace(/\s+/g, ' ').trim();
   if (t.length < 6 || t.length > (maxLen || 110)) return null;
   if (/https?:|www\.|@\w|#|\d{5,}/.test(t)) return null;
   if (/[^.!?…]\s[А-ЯЁA-Z][а-яёa-z]+/.test(t.replace(/^[^А-ЯЁA-Zа-яёa-z]+/, ''))) return null; // Имя посреди фразы
+  if (PERSONAL.test(t)) return null;                                   // адрес, телефон, карта, банк
+  if (SURNAME.test(t)) return null;                                    // слово с заглавной, похожее на фамилию
   return t;
+}
+
+// с этих слов начинаются реплики, которые без предыдущего сообщения непонятны
+var OPENERS = /^(?:и|а|но|это|так|вот|он|она|оно|они|его|ее|её|их|там|тут|то|ну|да|нет|же|тоже|потому|поэтому|который|которая|ага|угу|ой|ну и)(?![а-яё])/i;
+/** Насколько фраза понятна без контекста: от первого лица, законченная, не «а он…». */
+function sense_(t) {
+  var s = 0, w = t.split(/\s+/), low = t.toLowerCase().replace(/^[^а-яё]+/, '');
+  if (w.length < 3) s -= 2; else if (w.length <= 16) s += 1;
+  if (/(^|[^а-яё])(я|мне|меня|мой|моя|моё|мое|мои|мной)(?![а-яё])/i.test(t)) s += 2;
+  if (/(^|[^а-яё])(ты|тебе|тебя|твой|твоя|вы|вам|вас|ваш)(?![а-яё])/i.test(t)) s += 1;
+  if (/[.!?…)]$/.test(t)) s += 1;
+  if (OPENERS.test(low)) s -= 2;
+  if (MAT.test(t)) s += 1;
+  return s;
+}
+/** «@ник текст» → кому и сам текст (для признаков диалога). */
+function addr_(t) {
+  var m = /^\s*@([A-Za-z0-9_]{3,})[\s,:]*([\s\S]*)$/.exec(String(t || ''));
+  return m ? { to: m[1].toLowerCase(), body: m[2] } : { to: '', body: String(t || '') };
 }
 
 function buildLive_(inp, nowMs, salt, hash) {
@@ -377,13 +427,16 @@ function buildLive_(inp, nowMs, salt, hash) {
   });
 
   // ники: стабильно по соли, старшие участники выбирают первыми
+  (inp.names || []).concat(inp.hide || []).forEach(function (n) {
+    norm_(n).split(' ').forEach(function (t) { if (t.length >= 3) real[t] = 1; });
+  });
   var realNames = Object.keys(real).concat(people.map(function (p) { return p.first; }));
   var banned = {};
   realNames.forEach(function (t) { banned[t] = 1; });
   people.sort(function (a, b) { return (a.firstMs === Infinity ? 9e15 : a.firstMs) - (b.firstMs === Infinity ? 9e15 : b.firstMs) || (a.key < b.key ? -1 : 1); });
   var used = {};
   // ручные ники (NICKS в «Прозвищах»): '@ник_telegram' → 'Паулетта'; пол берётся из списка, где этот ник
-  // ключ — '@ник_telegram' или имя, как в чате («ксения кроссман»)
+  // ключ — '@ник_telegram' или имя, как в чате («маша иванова»)
   var nicks = {}, nickByPerson = new Map();
   Object.keys(inp.nicks || {}).forEach(function (k) {
     var v = String(inp.nicks[k]).trim(), key = k.trim();
@@ -435,8 +488,13 @@ function buildLive_(inp, nowMs, salt, hash) {
     });
     return out;
   }
-  function pickChat(arr) { // в чате берём только мат и восклицания
-    return pick(arr.filter(function (x) { return MAT.test(x.text) || /!/.test(x.text); }), 110, 20);
+  function pickChat(arr) { // в чате берём фразы, понятные без контекста: от первого лица, законченные
+    var out = [], seen = {};
+    arr.map(function (x) { var t = clean_(addr_(x.text).body, 110); return t && safe(t) ? { t: t, s: sense_(t), ms: x.ms || 0 } : null; })
+      .filter(function (x) { return x && x.s >= 3; })
+      .sort(function (a, b) { return b.s - a.s || b.ms - a.ms; })
+      .forEach(function (x) { if (out.length < 20 && !seen[x.t]) { seen[x.t] = 1; out.push(x.t); } });
+    return out;
   }
 
   // порядок на сайте перемешан, чтобы место не выдавало человека
@@ -444,44 +502,56 @@ function buildLive_(inp, nowMs, salt, hash) {
   var idx = new Map();
   people.forEach(function (p, i) { idx.set(p, i); });
 
-  // сценки из чата: кусок переписки, где двое отвечают друг другу (минимум по два раза),
-  // а третьи могут влезать. Реплики идут подряд с паузами не больше 5 минут.
-  var fights = [];
+  // Сценки из чата. В таблице нет пометки «ответ кому», поэтому берём только чистый обмен двух людей
+  // A→B→A(→B…) с паузами до 2 минут. Если реплика не проходит фильтр, сценка обрывается на ней,
+  // а слишком короткие обрывки выбрасываются. Выше ранжируются сценки с явными признаками разговора:
+  // обращение на «ты», вопрос и ответ, @ник собеседника, начало разговора после тишины.
   seq.sort(function (a, b) { return (a.ms || 0) - (b.ms || 0); });
-  var bursts = [], cur = [];
-  seq.forEach(function (m) {
-    if (!m.ms) return;
-    if (cur.length && m.ms - cur[cur.length - 1].ms > 5 * 60e3) { bursts.push(cur); cur = []; }
-    cur.push(m);
-  });
-  if (cur.length) bursts.push(cur);
-  bursts.forEach(function (b) {
-    for (var k = 0; k < b.length; k += 10) {
-      var L = b.slice(k, k + 12).filter(function (m) { return idx.has(m.p); })
-        .map(function (m) { var t = clean_(m.text, 90); return t && safe(t) ? [m.p, t] : null; })
-        .filter(Boolean);
-      if (L.length < 3) continue;
-      var cnt = new Map();
-      L.forEach(function (l) { cnt.set(l[0], (cnt.get(l[0]) || 0) + 1); });
-      var top = Array.from(cnt.keys()).sort(function (x, y) { return cnt.get(y) - cnt.get(x); });
-      var A = top[0], B = top[1];
-      if (!B || cnt.get(B) < 2) continue;
-      var ab = L.filter(function (l) { return l[0] === A || l[0] === B; }), turns = 0;
-      for (var q = 1; q < ab.length; q++) if (ab[q][0] !== ab[q - 1][0]) turns++;
-      if (turns < 2) continue;
-      var from = 0, to = L.length - 1;
-      while (L[from][0] !== A && L[from][0] !== B) from++;
-      while (L[to][0] !== A && L[to][0] !== B) to--;
-      var others = 0, scene = [];
-      L.slice(from, to + 1).forEach(function (l) {
-        var main = l[0] === A || l[0] === B;
-        if (scene.length >= 8 || (!main && ++others > 3)) return;
-        scene.push([idx.get(l[0]), l[1]]);
-      });
-      if (scene.length >= 3 && scene.some(function (l) { return MAT.test(l[1]) || /!/.test(l[1]); })) fights.push(scene);
+  seq.forEach(function (m) { var a = addr_(m.text); m.to = a.to; m.body = a.body; });
+  var GAP = 2 * 60e3, cands = [];
+  for (var s0 = 0; s0 + 1 < seq.length; s0++) {
+    var A = seq[s0].p, B = seq[s0 + 1].p;
+    if (A === B || !seq[s0].ms || !idx.has(A) || !idx.has(B)) continue;
+    var lines = [], score = 0, e = s0;
+    while (e < seq.length && lines.length < 6) {
+      var m = seq[e];
+      if (m.p !== (lines.length % 2 ? B : A)) break;
+      if (e > s0 && (!m.ms || m.ms - seq[e - 1].ms > GAP)) break;
+      var t = clean_(m.body, 90);
+      if (!t || !safe(t)) break;
+      var partner = m.p === A ? B : A;
+      score += sense_(t);
+      if (m.to && partner.user && m.to === partner.user) score += 3;          // @ник собеседника
+      if (/(^|[^а-яё])(ты|тебе|тебя|твой|твоя|вы|вам|вас)(?![а-яё])/i.test(t)) score += 1;
+      if (lines.length && /\?\s*$/.test(lines[lines.length - 1][1])) score += 2; // ответ на вопрос
+      lines.push([idx.get(m.p), t]);
+      e++;
     }
-  });
-  fights = fights.slice(-60);
+    if (lines.length < 3) continue;
+    if (s0 === 0 || !seq[s0 - 1].ms || seq[s0].ms - seq[s0 - 1].ms > GAP) score += 2; // разговор начался с нуля
+    var avg = score / lines.length;
+    if (avg >= 1.5) cands.push({ lines: lines, score: score, ms: seq[s0].ms });
+    s0 = e - 1;
+  }
+  var fights = cands.sort(function (a, b) { return b.score - a.score || b.ms - a.ms; }).slice(0, 40).map(function (c) { return c.lines; });
+
+  // Монологи: человек пишет 2–3 сообщения подряд за пару минут, и все они понятны без контекста.
+  var solos = [];
+  for (var k0 = 0; k0 < seq.length; k0++) {
+    var who = seq[k0].p, run = [], k = k0;
+    if (!idx.has(who) || !seq[k0].ms) continue;
+    while (k < seq.length && seq[k].p === who && run.length < 3 && (k === k0 || seq[k].ms - seq[k - 1].ms <= GAP)) {
+      var tt = clean_(seq[k].body, 110);
+      if (!tt || !safe(tt)) { run = []; break; }
+      run.push(tt); k++;
+    }
+    if (run.length >= 2 && run.join(' ').length <= 230) {
+      var sc = run.reduce(function (acc, x) { return acc + sense_(x); }, 0) / run.length;
+      if (sc >= 2) solos.push({ i: idx.get(who), lines: run, score: sc, ms: seq[k0].ms });
+    }
+    k0 = Math.max(k0, k - 1);
+  }
+  var solo = solos.sort(function (a, b) { return b.score - a.score || b.ms - a.ms; }).slice(0, 40).map(function (x) { return [x.i, x.lines]; });
 
   // реплики толпы: короткие ответы из чата («жесть», «ахахах», «ору»)
   var react = [], seenR = {};
@@ -506,6 +576,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       return { n: p.n, g: p.g, t: p.teeth, old: p.old, tr: p.tr, q: pickChat(p.q), b: pickB(p.b) };
     }),
     fights: fights,
+    solo: solo,
     react: react,
     bot: bot,
     stats: stats,

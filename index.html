@@ -66,7 +66,7 @@ body[data-v="5"] .bd{stroke:var(--c);stroke-width:3.5}body[data-v="5"] .sh{displ
 
 .p:hover .nm,.p.hi .nm,.p:focus-visible .nm{display:block}
 .p.hi svg{filter:drop-shadow(0 0 5px var(--acc)) drop-shadow(0 0 2px var(--acc))}
-.p.old{opacity:.3;filter:grayscale(1)}.p.old.hi{opacity:.75}
+.p.old{opacity:var(--op,.3);filter:grayscale(1);pointer-events:none}
 .p.dim{opacity:.13}
 .noold .p.old{display:none}
 .b{display:none;position:absolute;left:50%;bottom:calc(84px*var(--s,1) + 12px);transform:translateX(-24px);width:max-content;max-width:200px;padding:7px 11px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:16px;font-size:14px;line-height:1.25;z-index:2}
@@ -111,7 +111,6 @@ body[data-v="5"] .b{border-width:1px;box-shadow:0 6px 18px rgba(20,24,40,.12)}
   </header>
   <div class="ctrl">
     <label for="old"><input type="checkbox" id="old" checked> старые студенты</label>
-    <label for="soft"><input type="checkbox" id="soft"> мягкая версия (без мата)</label>
     <button id="all" type="button">показать всех</button>
   </div>
   <p class="info" id="info" aria-live="polite"></p>
@@ -131,8 +130,7 @@ const QN={1:'верхний правый',2:'верхний левый',3:'ни�
 const TN={1:'центральный резец',2:'боковой резец',3:'клык',4:'первый премоляр',5:'второй премоляр',6:'первый моляр',7:'второй моляр',8:'зуб мудрости'};
 const tname=f=>`${QN[f[0]]} ${TN[f[1]]}`, cap=s=>s[0].toUpperCase()+s.slice(1);
 const VD={1:'Как на листочке: тетрадь в линейку, карандаш, зубы и человечки чуть дрожат.',2:'Плоские фигурки из цветной бумаги на фоне неба и травы. Ярко и громко, удобно для мемов.',3:'Силуэты на подсвеченном экране. Баблы читаются издалека, старые студенты уходят в тень.',4:'Игровая площадка в пикселях: человечки бегают, как в старой приставке.',5:'Спокойная рабочая версия: цвет только у людей. Подстраивается под светлую и тёмную тему.'};
-const SOFT=[[/охренели/gi,'обалдели'],[/охренеть/gi,'ничего себе'],[/нахрен/gi,'к чёрту'],[/блин/gi,'ох'],[/бля[а-яё]*/gi,'ох'],[/задолбал[а-яё]*/gi,'достали'],[/ху[йеёия][а-яё]*/gi,'…'],[/пизд[а-яё]*/gi,'…'],[/[её]б[а-яё]*/gi,'…']];
-const soft=t=>$('#soft').checked?SOFT.reduce((s,[r,v])=>s.replace(r,v),t):t;
+const soft=t=>t; // разгрузочная версия: мат как есть, без цензуры
 /* демо на случай, если data/live.json не загрузился */
 const DEMO={updated:null,demo:true,people:[
  {n:'Паулетта',g:'f',t:['21'],old:false,q:['Да вы охренели все!','Опять держу лицо, блин'],b:[['мама','Мама, хватит меня успокаивать. Я злюсь.']]},
@@ -143,6 +141,7 @@ const DEMO={updated:null,demo:true,people:[
  {n:'Панчо',g:'m',t:['47'],old:false,q:['Чё вы ржёте, у меня 47-й горит!'],b:[]},
  {n:'Мерседес',g:'f',t:['36'],old:true,q:[],b:[]},{n:'Альфонсо',g:'m',t:['44'],old:true,q:[],b:[]}],
  fights:[[[0,'Ты опять за всех решила!'],[2,'А ты опять молчишь!'],[0,'Я не молчу, я держу лицо!'],[2,'Вот и держи, блин!']]],
+ solo:[[1,['Я сегодня впервые сказал отцу, что мне неприятно.','Руки тряслись, но я это сделал!']]],
  bot:['Разбор: злость пришла, лицо держишь, зуб платит.','Напоминаю: листочек сам себя не напишет.']};
 
 /* зубы */
@@ -173,11 +172,12 @@ const mk=(d,kind)=>{const bot=kind===true,sad=kind=='sad';
   if(bot){p.x=1.12;p.y=.65;p.lock=true;p.sp=.00008}
   if(sad)p.lock=true;
   p.tx=p.x;p.ty=p.y;
-  const el=document.createElement('div');el.className='p'+(old?' old':'')+(sad?' sad':'');el.tabIndex=0;el.setAttribute('role','button');
-  el.setAttribute('aria-label',p.name+(p.teeth.length?', зуб '+p.teeth.join(', '):''));el.style.setProperty('--c',p.c);
+  const el=document.createElement('div');el.className='p'+(old?' old':'')+(sad?' sad':'');el.style.setProperty('--c',p.c);
+  if(old){el.setAttribute('aria-hidden','true');el.style.setProperty('--op',(.1+Math.random()*.3).toFixed(2))} // старые: просто рисунок на заднем плане
+  else{el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label',p.name+(p.teeth.length?', зуб '+p.teeth.join(', '):''))}
   el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}${sad?'<g class="face"><path class="brow" d="M13 8L18 10M27 8L22 10"/><circle cx="16" cy="12" r="1.7"/><circle cx="24" cy="12" r="1.7"/><path class="mouth" d="M14 21Q20 15 26 21"/></g>':''}<path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
   el.querySelector('.nm').textContent=p.name;
-  el.addEventListener('click',()=>card(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();card(p)}});
+  if(!old){el.addEventListener('click',()=>card(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();card(p)}})}
   p.el=el;p.b=el.querySelector('.b');A.append(el);return p};
 
 let P=[],act=[],old=[],bot=null,DATA=DEMO,sel=null;
@@ -249,9 +249,14 @@ const fightScene=done=>{const f=rnd(DATA.fights);
   if(f.length>=4&&Math.random()<.6)cheerAt(crowd,[3200+(end-3200)*.55]);
   setTimeout(()=>{release(cast);done(3000)},end+700)};
 
-/* монолог: человек выходит в центр и говорит пару своих фраз из чата */
-const soloScene=done=>{const c=act.filter(p=>p.q.length>=2&&!p.lock&&(!sel||p.hi));if(!c.length)return done(300);
-  const p=rnd(c),{cx,cy}=spot(),q=[...p.q].sort(()=>Math.random()-.5).slice(0,2);
+/* монолог: человек выходит в центр и говорит несколько своих сообщений, написанных подряд;
+   если таких нет — одну фразу, понятную без контекста */
+const soloScene=done=>{
+  const runs=(DATA.solo||[]).filter(([i])=>P[i]&&!P[i].old&&!P[i].lock&&(!sel||P[i].hi));
+  let p,q;
+  if(runs.length){const r=rnd(runs);p=P[r[0]];q=r[1]}
+  else{const c=act.filter(x=>x.q.length&&!x.lock&&(!sel||x.hi));if(!c.length)return done(300);p=rnd(c);q=[rnd(p.q)]}
+  const {cx,cy}=spot();
   p.lock=true;p.tx=cx;p.ty=cy;
   clear([p],cx,cy);
   const end=play(q.map(t=>[p,t]),3000);
@@ -274,23 +279,25 @@ const botScene=done=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
   setTimeout(()=>{bot.tx=1.14},end+300);setTimeout(()=>done(2500),end+1200)};
 
 const director=()=>{if(scene)return setTimeout(director,2000);
-  const opts=[];
-  if(DATA.fights.length)opts.push(fightScene,fightScene,fightScene);
-  if(act.some(p=>p.q.length>=2))opts.push(soloScene);
-  if(act.some(p=>p.pb.length))opts.push(pbScene,pbScene);
-  opts.push(botScene);
+  // когда есть точки Б, им ~70% сценок; чату (перепалки, монологи, бот) ~30%
+  const chat=[];
+  if(DATA.fights.length)chat.push(fightScene,fightScene);
+  if((DATA.solo||[]).length||act.some(p=>p.q.length))chat.push(soloScene);
+  chat.push(botScene);
+  const hasB=act.some(p=>p.pb.length);
+  const opts=hasB&&Math.random()<.7?[pbScene]:chat;
   scene=true;
   rnd(opts)(pause=>{scene=false;setTimeout(director,pause+Math.random()*2000)})};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
-  if(!sel){I.innerHTML=`<b>Все участники</b> · ${act.length} сейчас, ${old.length} в прошлом. Нажмите на зуб, чтобы собрать тех, кто с ним работает.`;return}
-  const a=act.filter(p=>p.hi),o=old.filter(p=>p.hi);
+  if(!sel){I.innerHTML=`<b>Все участники</b> · ${act.length} сейчас. Нажмите на зуб, чтобы собрать тех, кто с ним работает.`;return}
+  const a=act.filter(p=>p.hi);
   const b=document.createElement('b');b.textContent=`${sel} · ${cap(tname(sel))}`;I.append(b,document.createElement('br'),
-    (a.length?a.map(p=>p.name).join(', '):'Сейчас с этим зубом никто не работает')+(o.length?` · в прошлом: ${o.map(p=>p.name).join(', ')}`:''))};
+    a.length?a.map(p=>p.name).join(', '):'Сейчас с этим зубом никто не работает')};
 const pick=f=>{sel=sel===f?null:f;
   T.querySelectorAll('.tooth').forEach(g=>{g.classList.toggle('sel',g.dataset.f===sel);g.setAttribute('aria-pressed',g.dataset.f===sel)});
-  P.forEach(p=>{p.hi=!!sel&&p.teeth.includes(sel);p.el.classList.toggle('hi',p.hi);p.el.classList.toggle('dim',!!sel&&!p.hi&&!p.bot);if(!p.lock){p.next=0;target(p)}});info()};
+  P.forEach(p=>{p.hi=!!sel&&!p.old&&p.teeth.includes(sel);p.el.classList.toggle('hi',p.hi);p.el.classList.toggle('dim',!!sel&&!p.hi&&!p.bot);if(!p.lock){p.next=0;target(p)}});info()};
 T.addEventListener('click',e=>{const g=e.target.closest('.tooth');if(g)pick(g.dataset.f)});
 T.addEventListener('keydown',e=>{const g=e.target.closest('.tooth');if(g&&(e.key=='Enter'||e.key==' ')){e.preventDefault();pick(g.dataset.f)}});
 $('#all').addEventListener('click',()=>{if(sel)pick(sel)});
