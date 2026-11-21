@@ -515,7 +515,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       if (!p) return;
       stats.table_people++;
       var th = String(r[cZ] || '').match(/\b[1-4][1-8]\b/g);
-      if (th && th.length) p.teeth = th.slice(0, 12);
+      if (th && th.length) p.teeth = th.filter(function (x, i) { return th.indexOf(x) === i; }).slice(0, 32);
       p.show = String(r[cS] || '').trim().toLowerCase() === 'да';
     });
   }

@@ -86,7 +86,7 @@ def clean(raw, pools):
             raise Bad(f"{w}.n: ник не из списка или повтор")
         names.add(n)
         t = p.get("t")
-        if not isinstance(t, list) or len(t) > 8 or not all(isinstance(x, str) and TOOTH_RE.match(x) for x in t):
+        if not isinstance(t, list) or len(t) > 32 or not all(isinstance(x, str) and TOOTH_RE.match(x) for x in t):
             raise Bad(f"{w}.t")
         for k in ("old", "tr"):
             if not isinstance(p.get(k), bool):
