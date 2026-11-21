@@ -28,7 +28,9 @@ var CONFIG = {
   // полный список имён и фамилий участников: всё отсюда вырезается из фраз
   STATS_SHEET: 'СР_Статистика',
   // true: люди из эфиров, которых нет в чате и в словаре прозвищ, тоже стоят на площадке; false: их нет
-  KEEP_UNMATCHED_EFIR: false
+  KEEP_UNMATCHED_EFIR: false,
+  // чьи сообщения — реплики бота на площадке (имя автора или ник). Остальные боты игнорируются.
+  BOT_MATCH: /джузеппе|giuseppe/i
 };
 
 // Ники. Те же списки читает scripts/fetch_live.py: ник не из списка не пройдёт проверку.
@@ -82,6 +84,9 @@ function debugLive() {
   Logger.log('Из эфиров не нашлись в чате (' + d.unmatched.length + '):\n' + d.unmatched.join('\n'));
   Logger.log('Тёзки, выбран первый (' + d.ambiguous.length + '):\n' + d.ambiguous.join('\n'));
   Logger.log('Кто какой ник:\n' + d.nicks.join('\n'));
+  Logger.log('Боты в чатах (реплики берутся только у тех, кто подходит под CONFIG.BOT_MATCH):\n' +
+    Object.keys(d.bots).map(function (k) { return k + ' — ' + d.bots[k].n + ' сообщ., пример: ' + d.bots[k].ex; }).join('\n'));
+  Logger.log('Реплики бота на площадке (' + out.bot.length + '):\n' + out.bot.join('\n'));
   Logger.log('Клиенты из отчётов ЗКФ без пары в чате (' + d.reportMiss.length + '):\n' + d.reportMiss.join('\n'));
   var rows = readInput_().msgs, cT = col_(rows[0], 'Текст'), ex = [];
   for (var i = rows.length - 1; i > 0 && ex.length < 5; i--) if (/Зуб/i.test(rows[i][cT]) && !/Клиент/i.test(rows[i][cT])) ex.push(String(rows[i][cT]).slice(0, 200));
@@ -248,7 +253,7 @@ function buildLive_(inp, nowMs, salt, hash) {
 
   var P = {}, list = [], botLines = [], seq = [], reports = [], pointB = [], selfTeeth = {}, nickTeeth = {};
   var stats = { efir_unmatched: 0, efir_ambiguous: 0, reports: 0, reports_matched: 0, point_b: 0, point_b_matched: 0, zub_msgs: 0, self_teeth: 0, nick_teeth: 0 };
-  var debug = { unmatched: [], ambiguous: [], reportMiss: [] }; // только для debugLive, наружу не уходит
+  var debug = { unmatched: [], ambiguous: [], reportMiss: [], bots: {} }; // только для debugLive, наружу не уходит
   var real = {}; // настоящие имена и ники: для последней проверки
   function person(key, author, user) {
     if (P[key]) return P[key];
@@ -277,8 +282,15 @@ function buildLive_(inp, nowMs, salt, hash) {
       nickTeeth[nu][nm[2]] = (nickTeeth[nu][nm[2]] || 0) + 1;
       stats.nick_teeth++;
     }
-    var isBot = /bot$/i.test(user) || /бот|джузеппе|giuseppe/i.test(author);
-    if (isBot) { botLines.push({ ms: ms, text: text }); continue; }
+    // боты: Джузеппе даёт реплики бота, остальные (сервисные, спам, SCI BOT) пропускаются целиком
+    var isBot = /bot$/i.test(user) || /(^|[^а-яё])бот(?![а-яё])/i.test(author) || CONFIG.BOT_MATCH.test(author + ' ' + user);
+    if (isBot) {
+      var bk = author + (user ? ' @' + user : '');
+      if (!debug.bots[bk]) debug.bots[bk] = { n: 0, ex: String(text).replace(/\s+/g, ' ').slice(0, 120) };
+      debug.bots[bk].n++;
+      if (CONFIG.BOT_MATCH.test(author + ' ' + user)) botLines.push({ ms: ms, text: text });
+      continue;
+    }
     if (!author || (author === 'Telegram' && !user)) continue;
     // свой зуб в собственных сообщениях: «у меня 46-й ноет», «зуб 21», «мой клык 43»
     if (!/Клиент/i.test(text)) {
@@ -605,10 +617,17 @@ function buildLive_(inp, nowMs, salt, hash) {
     react.push(t);
   });
 
+  // Реплики бота: только фразы из разборов Джузеппе про то, что стоит за сообщением
+  // (скрытая потребность, злость, страх, «на самом деле»…). Служебное и объявления не берём.
+  var NEED = /потребност|скрыт|на самом деле|за этим|стоит за|хочет|хочется|нужн|боится|страх|злост|злишь|обид|подавл|стыд|вин[аыу]|прос(ит|ьб)|защищ|контрол|признани|любв|принят/i;
+  var SERVICE = /чат перенос|новую группу|перешли|ссылк|подпис|канал|оплат|скидк|розыгрыш|переходите|вступайте|группа переехала/i;
   var bot = pick(botLines.reduce(function (acc, x) {
-    String(x.text).split(/(?<=[.!?…])\s+/).forEach(function (t) { acc.push({ ms: x.ms, text: t }); });
+    String(x.text).split(/(?<=[.!?…])\s+|\n+/).forEach(function (t) {
+      t = t.replace(/^[^А-ЯЁа-яё]+/, '');
+      if (t.length >= 20 && NEED.test(t) && !SERVICE.test(t)) acc.push({ ms: x.ms, text: t });
+    });
     return acc;
-  }, []), 120, 30);
+  }, []), 140, 30);
 
   return {
     updated: new Date(nowMs).toISOString().slice(0, 16) + 'Z',

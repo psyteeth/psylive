@@ -280,7 +280,7 @@ const pbScene=done=>{const c=act.filter(p=>p.pb.length&&!p.lock&&(!sel||p.hi));i
   setTimeout(()=>{s.el.remove();P.splice(P.indexOf(s),1);done(2500)},end+3000)};
 
 const botScene=done=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
-  const end=play([[bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot)]],3200);
+  const end=play([[bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot)]],3200); // демо-фразы только в демо-режиме
   setTimeout(()=>{bot.tx=1.14},end+300);setTimeout(()=>done(2500),end+1200)};
 
 const director=()=>{if(scene)return setTimeout(director,2000);
@@ -288,7 +288,7 @@ const director=()=>{if(scene)return setTimeout(director,2000);
   const chat=[];
   if(DATA.fights.length)chat.push(fightScene,fightScene);
   if((DATA.solo||[]).length||act.some(p=>p.q.length))chat.push(soloScene);
-  chat.push(botScene);
+  if(DATA.demo||DATA.bot.length)chat.push(botScene); // бот выходит, только если есть его фразы из разборов
   const hasB=act.some(p=>p.pb.length);
   const opts=hasB&&Math.random()<.7?[pbScene]:chat;
   scene=true;
