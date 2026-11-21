@@ -31,6 +31,9 @@ var CONFIG = {
   KEEP_UNMATCHED_EFIR: false,
   // чьи сообщения — реплики бота на площадке (имя автора или ник). Остальные боты игнорируются.
   BOT_MATCH: /джузеппе|giuseppe/i,
+  // диалоги из чата в базовом блоке не показываем (часто непонятны без контекста);
+  // диалоги будут «коммуникациями» с ответами из точки А и точки Б
+  CHAT_SCENES: false,
   // базовый блок фраз: что звучит на площадке (разметка владельца 21.11.2026).
   // keep — берём, maybe — берём, но ниже в очереди, drop — не берём (кроме PHRASE_KEEP в «Прозвищах»)
   BLOCKS: {
@@ -126,7 +129,7 @@ function readInput_() {
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
   return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
     nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [],
-    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {},
+    names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {}, merge: typeof MERGE !== 'undefined' ? MERGE : {},
     phraseKeep: typeof PHRASE_KEEP !== 'undefined' ? PHRASE_KEEP : [], phraseDrop: typeof PHRASE_DROP !== 'undefined' ? PHRASE_DROP : [] };
 }
 
@@ -332,8 +335,12 @@ function buildLive_(inp, nowMs, salt, hash) {
     return p;
   }
 
+  // один человек под двумя никами (MERGE в «Прозвищах»: '@старый': '@новый')
+  var merge = {};
+  Object.keys(inp.merge || {}).forEach(function (k) { merge[k.replace(/^@/, '').toLowerCase()] = String(inp.merge[k]).replace(/^@/, '').toLowerCase(); });
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i], ms = parseDT_(r[cD]), author = String(r[cA] || '').trim(), user = String(r[cU] || '').replace(/^@/, '').trim().toLowerCase();
+    if (merge[user]) user = merge[user];
     var text = String(r[cT] || '');
     // отчёты ЗКФ: «Клиент: #Яна шер | 🦷 Зуб: 47» или зуб на следующей строке; от людей и от ботов
     if (/Зуб/i.test(text)) stats.zub_msgs++;
@@ -660,7 +667,7 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (!dropped && (forced || (avg >= 1.5 && okLines * 2 >= lines.length))) cands.push({ lines: lines, score: score + (forced ? 100 : 0), ms: seq[s0].ms });
     s0 = e - 1;
   }
-  var fights = cands.sort(function (a, b) { return b.score - a.score || b.ms - a.ms; }).slice(0, 40).map(function (c) { return c.lines; });
+  var fights = CONFIG.CHAT_SCENES ? cands.sort(function (a, b) { return b.score - a.score || b.ms - a.ms; }).slice(0, 40).map(function (c) { return c.lines; }) : [];
 
   // Монологи: человек пишет 2–3 сообщения подряд за пару минут, и все они понятны без контекста.
   var solos = [];
