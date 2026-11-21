@@ -365,7 +365,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       nickTeeth[nu][nm[2]] = (nickTeeth[nu][nm[2]] || 0) + 1;
       stats.nick_teeth++;
     }
-    // боты: Джузеппе даёт реплики бота, остальные (сервисные, спам, SCI BOT) пропускаются целиком
+    // боты: Джузеппе даёт реплики бота, остальные боты пропускаются целиком
     var isBot = /bot$/i.test(user) || /(^|[^а-яё])бот(?![а-яё])/i.test(author) || CONFIG.BOT_MATCH.test(author + ' ' + user);
     if (isBot) {
       var bk = author + (user ? ' @' + user : '');
@@ -780,13 +780,12 @@ function buildLive_(inp, nowMs, salt, hash) {
   });
 
   // Реплики бота: только фразы из разборов Джузеппе про то, что стоит за сообщением
-  // (скрытая потребность, злость, страх, «на самом деле»…). Служебное и объявления не берём.
+  // (скрытая потребность, злость, страх, «на самом деле»…).
   var NEED = /потребност|скрыт|на самом деле|за этим|стоит за|хочет|хочется|нужн|боится|страх|злост|злишь|обид|подавл|стыд|вин[аыу]|прос(ит|ьб)|защищ|контрол|признани|любв|принят/i;
-  var SERVICE = /чат перенос|новую группу|перешли|ссылк|подпис|канал|оплат|скидк|розыгрыш|переходите|вступайте|группа переехала/i;
   var bot = pick(botLines.reduce(function (acc, x) {
     String(x.text).split(/(?<=[.!?…])\s+|\n+/).forEach(function (t) {
       t = t.replace(/^[^А-ЯЁа-яё]+/, '');
-      if (t.length >= 20 && NEED.test(t) && !SERVICE.test(t)) acc.push({ ms: x.ms, text: t });
+      if (t.length >= 20 && NEED.test(t)) acc.push({ ms: x.ms, text: t });
     });
     return acc;
   }, []), 140, 30);
