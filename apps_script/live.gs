@@ -485,10 +485,12 @@ function buildLive_(inp, nowMs, salt, hash) {
     n = String(n || '').toLowerCase().replace(/ё/g, 'е');
     if (n.length < 3) return;
     var canon = DIM[n] || n;
-    if (!real[canon] && !real[n] && !people.some(function (p) { return p.first === canon || p.first === n; })) return;
+    var known = function (x) { return real[x] || latVariants_(x).some(function (l) { return real[l]; }) ||
+      people.some(function (p) { return p.first === x; }); };            // «Оля» → «ольга» → в чате «Olga»
+    if (!known(canon) && !known(n)) return;
     [n, canon].forEach(function (x) {
       firsts[x] = 1;
-      if (/[ая]$/.test(x) && x.length >= 4) { firsts[x.slice(0, -1)] = 1; firsts[x.slice(0, -1) + 'ь'] = 1; } // Лера → Лер, Оля → Оль
+      if (/[ая]$/.test(x) && x.length >= 3) { firsts[x.slice(0, -1)] = 1; firsts[x.slice(0, -1) + 'ь'] = 1; } // Лера → Лер, Оля → Оль, Юля → Юль
     });
   });
   function safe(t) {
