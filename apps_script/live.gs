@@ -45,6 +45,7 @@ function doGet() {
   var body;
   try {
     body = buildLive_(readInput_(), Date.now(), CONFIG.SALT, hashGs_);
+    delete body._debug;
   } catch (err) {
     body = { error: String((err && err.message) || err) };
   }
@@ -56,8 +57,24 @@ function testLive() {
   var out = buildLive_(readInput_(), Date.now(), CONFIG.SALT, hashGs_);
   Logger.log(JSON.stringify({
     updated: out.updated, stats: out.stats,
+    teeth_people: out.people.filter(function (p) { return p.t.length; }).length,
     sample: out.people.slice(0, 5).map(function (p) { return { n: p.n, t: p.t, old: p.old, q: p.q.length, b: p.b.length }; })
   }, null, 2));
+}
+
+/**
+ * Отладка сопоставления. В журнале будут НАСТОЯЩИЕ имена: только для вас,
+ * никуда не копируйте журнал публично. Наружу (doGet) это не отдаётся.
+ */
+function debugLive() {
+  var out = buildLive_(readInput_(), Date.now(), CONFIG.SALT, hashGs_);
+  var d = out._debug;
+  Logger.log('Из эфиров не нашлись в чате (' + d.unmatched.length + '):\n' + d.unmatched.join('\n'));
+  Logger.log('Тёзки, выбран первый (' + d.ambiguous.length + '):\n' + d.ambiguous.join('\n'));
+  Logger.log('Клиенты из отчётов ЗКФ без пары в чате (' + d.reportMiss.length + '):\n' + d.reportMiss.join('\n'));
+  var rows = readInput_().msgs, cT = col_(rows[0], 'Текст'), ex = [];
+  for (var i = rows.length - 1; i > 0 && ex.length < 5; i--) if (/Зуб/i.test(rows[i][cT]) && !/Клиент/i.test(rows[i][cT])) ex.push(String(rows[i][cT]).slice(0, 200));
+  Logger.log('Примеры сообщений со словом «Зуб», которые не похожи на отчёт:\n' + ex.join('\n---\n'));
 }
 
 function hashGs_(s) {
@@ -141,6 +158,8 @@ function buildLive_(inp, nowMs, salt, hash) {
   }
 
   var P = {}, list = [], botLines = [], seq = [], reports = [], pointB = [];
+  var stats = { efir_unmatched: 0, efir_ambiguous: 0, reports: 0, reports_matched: 0, point_b: 0, point_b_matched: 0, zub_msgs: 0 };
+  var debug = { unmatched: [], ambiguous: [], reportMiss: [] }; // только для debugLive, наружу не уходит
   var real = {}; // настоящие имена и ники: для последней проверки
   function person(key, author, user) {
     if (P[key]) return P[key];
@@ -155,12 +174,16 @@ function buildLive_(inp, nowMs, salt, hash) {
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i], ms = parseDT_(r[cD]), author = String(r[cA] || '').trim(), user = String(r[cU] || '').replace(/^@/, '').trim().toLowerCase();
     var text = String(r[cT] || '');
+    // отчёты ЗКФ: «Клиент: #Яна шер | 🦷 Зуб: 47» или зуб на следующей строке; от людей и от ботов
+    if (/Зуб/i.test(text)) stats.zub_msgs++;
+    var reRep = /Клиент\s*:\s*#?\s*([^|\n]+?)\s*(?:\||\n)[\s\S]{0,200}?Зуб[а-яё]*\s*:?\s*([^\n]+)/gi, rep;
+    while ((rep = reRep.exec(text))) {
+      var th = rep[2].match(/\b[1-4][1-8]\b/g) || [];
+      if (th.length) reports.push({ ms: ms, name: rep[1], teeth: th });
+    }
     var isBot = /bot$/i.test(user) || /бот|джузеппе|giuseppe/i.test(author);
     if (isBot) { botLines.push({ ms: ms, text: text }); continue; }
     if (!author || (author === 'Telegram' && !user)) continue;
-    // отчёты ЗКФ: «Клиент: #Яна шер | 🦷 Зуб: 47»
-    var rep = /Клиент:\s*#?\s*([^|\n]+?)\s*\|[^\n]*?Зуб[а-яё]*\s*:\s*([^\n]+)/i.exec(text);
-    if (rep) reports.push({ ms: ms, name: rep[1], teeth: (rep[2].match(/\b[1-4][1-8]\b/g) || []) });
     // точка Б: пост тренера с тегом #точкаБ, строки «@ник — фраза»
     if (trainers[user] && /#точка\s*б/i.test(text)) {
       text.split('\n').forEach(function (line) {
@@ -177,10 +200,16 @@ function buildLive_(inp, nowMs, salt, hash) {
   }
 
   // сопоставление имени из эфиров или отчёта с человеком из чата
-  var stats = { efir_unmatched: 0, efir_ambiguous: 0, reports: reports.length, reports_matched: 0, point_b: pointB.length, point_b_matched: 0 };
+  stats.reports = reports.length; stats.point_b = pointB.length;
+  var memo = {};
   function match(name, create) {
     var toks = norm_(name).split(' ').filter(Boolean);
     if (!toks.length) return null;
+    var mk = toks.join(' ') + '|' + (create ? 1 : 0);
+    if (memo[mk] !== undefined) return memo[mk];
+    return (memo[mk] = matchNew(toks, create));
+  }
+  function matchNew(toks, create) {
     var first = toks[0], canon = DIM[first] || first, rest = toks[1] || '';
     var lat = translit_(canon).slice(0, 4);
     var cands = list.filter(function (p) {
@@ -189,12 +218,22 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (rest && cands.length > 1) {
       var rl = translit_(rest);
       cands = cands.filter(function (p) {
-        return p.toks.some(function (t) { return t !== canon && t !== first && t.indexOf(rest) === 0; }) || (p.user && p.user.indexOf(rl) >= 0);
+        return p.toks.some(function (t) { return t !== canon && t !== first && t.indexOf(rest) === 0; }) || (p.user && rl.length >= 2 && p.user.indexOf(rl) >= 0); // «т» → t слишком коротко для ника
       });
     }
+    if (cands.length > 1) {
+      // несколько тёзок: сначала тот, у кого имя стоит первым словом («Яна» лучше «Иванова Яна»), потом кто писал позже
+      var firstPos = cands.filter(function (p) { return p.toks[0] === canon || p.toks[0] === first; });
+      if (firstPos.length) cands = firstPos;
+      cands.sort(function (a, b) { return (b.last || 0) - (a.last || 0); });
+      stats.efir_ambiguous++;
+      debug.ambiguous.push(toks.join(' ') + ' → ' + cands.map(function (p) { return p.toks.join(' ') + (p.user ? ' @' + p.user : ''); }).join(' | '));
+      return cands[0];
+    }
     if (cands.length === 1) return cands[0];
-    if (!create) return null;
-    if (cands.length > 1) stats.efir_ambiguous++; else stats.efir_unmatched++;
+    if (!create) { debug.reportMiss.push(toks.join(' ')); return null; }
+    stats.efir_unmatched++;
+    debug.unmatched.push(toks.join(' '));
     var p = person('e:' + toks.join(' '), canon + (rest ? ' ' + rest : ''), '');
     p.first = canon;
     return p;
@@ -301,6 +340,7 @@ function buildLive_(inp, nowMs, salt, hash) {
     }),
     fights: fights,
     bot: bot,
-    stats: stats
+    stats: stats,
+    _debug: debug // doGet его вырезает
   };
 }

@@ -25,7 +25,7 @@ GS = ROOT / "apps_script" / "live.gs"
 TOOTH_RE = re.compile(r"^[1-4][1-8]$")
 UPDATED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 BAD_TEXT_RE = re.compile(r"https?:|www\.|@\w|#|\d{5,}")
-STATS_KEYS = {"efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched"}
+STATS_KEYS = {"efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs"}
 
 
 class Bad(Exception):
