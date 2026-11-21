@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -133,7 +134,23 @@ def clean(raw, pools):
 def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": "psylive"})
     with urllib.request.urlopen(req, timeout=300) as r:  # Apps Script отвечает редиректом, urllib идёт за ним
-        return json.loads(r.read().decode("utf-8"))
+        body = r.read().decode("utf-8", "replace")
+        final = urllib.parse.urlsplit(r.geturl())
+    try:
+        return json.loads(body)
+    except ValueError:
+        pass
+    # не JSON: подсказка без самой ссылки (она секрет)
+    if final.netloc.startswith("accounts.google"):
+        why = ("Google просит войти. В развёртывании Apps Script поставьте «У кого есть доступ: Все» "
+               "и скопируйте новую ссылку /exec")
+    elif "/dev" in final.path or "/edit" in final.path:
+        why = "в LIVE_URL ссылка на редактор или /dev, а нужна ссылка развёртывания, которая заканчивается на /exec"
+    elif not final.path.endswith("/exec") and "googleusercontent" not in final.netloc:
+        why = f"ссылка ведёт не на веб-приложение ({final.netloc}); нужна ссылка развёртывания /exec"
+    else:
+        why = "Apps Script вернул страницу вместо данных; откройте ссылку /exec в браузере и посмотрите, что там"
+    raise Bad(f"ответ не JSON: {why}")
 
 
 def main(argv=None):
