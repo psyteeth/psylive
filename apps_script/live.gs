@@ -17,6 +17,8 @@
 var CONFIG = {
   CHATS_ID: 'ВСТАВЬТЕ_ID_ТАБЛИЦЫ_ЧАТОВ',
   EFIRY_ID: 'ВСТАВЬТЕ_ID_ТАБЛИЦЫ_ЭФИРОВ',
+  // таблица «Участники психостоматологии»: зубы, согласие на показ, коммуникации (пусто = не читать)
+  PEOPLE_ID: 'ВСТАВЬТЕ_ID_ТАБЛИЦЫ_УЧАСТНИКОВ',
   // случайная строка: от неё зависит, какой ник у кого. Сменить = все ники перемешаются.
   SALT: 'ВСТАВЬТЕ_СЛУЧАЙНУЮ_СТРОКУ',
   TZ: 'Europe/Moscow',
@@ -127,7 +129,14 @@ function readInput_() {
     return { name: s.getName().replace(/\s+/g, ' ').trim().toUpperCase(), display: s.getDataRange().getDisplayValues() };
   });
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
-  return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
+  var ptPeople = [], ptComm = [];
+  if (CONFIG.PEOPLE_ID && CONFIG.PEOPLE_ID.indexOf('ВСТАВЬТЕ') < 0) {
+    var pt = SpreadsheetApp.openById(CONFIG.PEOPLE_ID);
+    var su = pt.getSheetByName('Участники'), sc = pt.getSheetByName('Коммуникации');
+    if (su) ptPeople = su.getDataRange().getDisplayValues();
+    if (sc) ptComm = sc.getDataRange().getDisplayValues();
+  }
+  return { ptPeople: ptPeople, ptComm: ptComm, msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
     nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [],
     names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {}, merge: typeof MERGE !== 'undefined' ? MERGE : {},
     phraseKeep: typeof PHRASE_KEEP !== 'undefined' ? PHRASE_KEEP : [], phraseDrop: typeof PHRASE_DROP !== 'undefined' ? PHRASE_DROP : [] };
@@ -491,6 +500,26 @@ function buildLive_(inp, nowMs, salt, hash) {
     Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).forEach(function (t) { if (p.teeth.indexOf(t) < 0 && p.teeth.length < 4) p.teeth.push(t); });
   });
 
+  // Таблица участников: зубы оттуда важнее догадок по чату; «показ_на_сайте = да» разрешает коммуникации
+  var colOf = function (rows, name) { return rows.length ? rows[0].map(function (h) { return String(h).trim(); }).indexOf(name) : -1; };
+  var byUser = function (nick) {
+    var u = String(nick || '').replace(/^@/, '').trim().toLowerCase();
+    u = merge[u] || u;
+    return u ? list.filter(function (p) { return p.user === u; })[0] : null;
+  };
+  stats.table_people = 0;
+  if (inp.ptPeople && inp.ptPeople.length > 2) {
+    var cN = colOf(inp.ptPeople, 'ник_tg'), cZ = colOf(inp.ptPeople, 'зубы'), cS = colOf(inp.ptPeople, 'показ_на_сайте');
+    inp.ptPeople.slice(2).forEach(function (r) {
+      var p = byUser(r[cN]);
+      if (!p) return;
+      stats.table_people++;
+      var th = String(r[cZ] || '').match(/\b[1-4][1-8]\b/g);
+      if (th && th.length) p.teeth = th.slice(0, 12);
+      p.show = String(r[cS] || '').trim().toLowerCase() === 'да';
+    });
+  }
+
   // нет ни отчёта, ни ника: берём зубы, которые человек сам называл хотя бы дважды
   list.forEach(function (p) {
     var c = selfTeeth[p.key];
@@ -601,7 +630,8 @@ function buildLive_(inp, nowMs, salt, hash) {
   function inList(t, L) {
     var n = normX_(t);
     if (n.length < 6) return false;
-    for (var i = 0; i < L.length; i++) if (L[i] === n || L[i].indexOf(n) >= 0 || (L[i].length >= 40 && n.indexOf(L[i]) === 0)) return true;
+    // короткое («поняла») — только точным совпадением, иначе оно находится внутри «ни хуя не поняла»
+    for (var i = 0; i < L.length; i++) if (L[i] === n || (n.length >= 14 && L[i].indexOf(n) >= 0) || (L[i].length >= 40 && n.indexOf(L[i]) === 0)) return true;
     return false;
   }
   var RANK = {};
@@ -622,7 +652,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       var b = blockOf_(t); stats.blocks[b] = (stats.blocks[b] || 0) + 1;   // сколько фраз в каком блоке
       return { t: t, r: rankOf(t), s: sense_(t), ms: x.ms || 0 };
     })
-      .filter(function (x) { return x && x.r > 0 && (x.r === 3 || x.s >= 1); })
+      .filter(function (x) { return x && x.r > 0 && (x.r === 3 || (x.s >= 1 && x.t.split(/\s+/).length >= 3)); }) // «Поняла» одна — непонятно о чём
       .sort(function (a, b) { return b.r - a.r || b.s - a.s || b.ms - a.ms; })
       .forEach(function (x) { if (out.length < 20 && !seen[x.t]) { seen[x.t] = 1; out.push(x.t); } });
     return out;
@@ -682,7 +712,8 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (run.length >= 2 && run.join(' ').length <= 230) {
       var sc = run.reduce(function (acc, x) { return acc + sense_(x); }, 0) / run.length;
       var rr = run.map(rankOf), forcedS = rr.indexOf(3) >= 0, droppedS = run.some(function (x) { return inList(x, DROPX); });
-      if (!droppedS && (forcedS || (sc >= 2 && rr.every(function (r) { return r > 0; }))))
+      var shortS = run.some(function (x, i) { return rr[i] < 3 && x.split(/\s+/).length < 3; });
+      if (!droppedS && !shortS && (forcedS || (sc >= 2 && rr.every(function (r) { return r > 0; }))))
         solos.push({ i: idx.get(who), lines: run, score: sc + (forcedS ? 100 : 0), ms: seq[k0].ms });
     }
     k0 = Math.max(k0, k - 1);
@@ -709,6 +740,31 @@ function buildLive_(inp, nowMs, salt, hash) {
       solo.unshift([idx.get(who), [t]]);
     });
   });
+
+  // Коммуникации из таблицы участников: адресат говорит фразу, участник отвечает из точки А, (АА) и Б.
+  // Только «на_сайт = да» у строки и «показ_на_сайте = да» у участника. Фильтр имён и личного действует.
+  var FACES = { 'улыбка': 1, 'грустный': 1, 'очень грустный': 1, 'злой': 1, 'очень злой': 1, 'ржущий злой': 1, 'портал': 1 };
+  var comm = [];
+  stats.comm = 0;
+  if (inp.ptComm && inp.ptComm.length > 2) {
+    var H = {};
+    inp.ptComm[0].forEach(function (h, i) { H[String(h).trim()] = i; });
+    var cell = function (r, k) { return H[k] == null ? '' : String(r[H[k]] || '').trim(); };
+    var txt = function (t) { if (!t) return ''; var c = clean_(t, 220, true); return c && safe(c) && !hasCommonName_(c) ? c : null; };
+    var face = function (f) { f = f.toLowerCase(); return FACES[f] ? f : ''; };
+    inp.ptComm.slice(2).forEach(function (r) {
+      if (cell(r, 'на_сайт').toLowerCase() !== 'да') return;
+      var p = byUser(cell(r, 'ник_tg'));
+      if (!p || !p.show || !idx.has(p)) return;
+      var said = txt(cell(r, 'фраза_адресата')), a = txt(cell(r, 'ответ_А')), aa = txt(cell(r, 'ответ_АА')), b = txt(cell(r, 'ответ_Б'));
+      if (!said || a === null || aa === null || b === null || (!a && !b)) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
+      var role = cell(r, 'адресат_роль').toLowerCase().replace(/[^а-яё -]/g, '').slice(0, 30);
+      var tooth = (cell(r, 'зуб').match(/\b[1-4][1-8]\b/) || [''])[0];
+      comm.push([idx.get(p), role, face(cell(r, 'лицо_адресата')), said, a, face(cell(r, 'лицо_после_А')), aa, face(cell(r, 'лицо_после_АА')),
+        b, face(cell(r, 'лицо_после_Б')), cell(r, 'портал').toLowerCase() === 'да', tooth]);
+    });
+    stats.comm = comm.length;
+  }
 
   // реплики толпы: короткие ответы из чата («жесть», «ахахах», «ору»)
   var react = [], seenR = {};
@@ -742,6 +798,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       return { n: p.n, g: p.g, t: p.teeth, old: p.old, tr: p.tr, q: pq.concat(pickChat(p.q).filter(function (x) { return pq.indexOf(x) < 0; })).slice(0, 24), b: pickB(p.b) };
     }),
     fights: fights,
+    comm: comm,
     solo: solo,
     react: react,
     bot: bot,

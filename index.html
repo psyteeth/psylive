@@ -80,9 +80,24 @@ body[data-v="5"] .hd{stroke:#111;stroke-width:3.5}body[data-v="5"] .bd{stroke-wi
 .p.sad .nm:empty{display:none!important}
 .p.sad .nm{display:block;top:auto;bottom:calc(84px*var(--s,1) + 2px);font-size:12px;background:var(--bub);color:var(--bubi);border:1px solid var(--bubl);border-radius:8px;padding:0 6px}
 .p.sad.talk .nm{display:none}
-.face circle{fill:#1d1d1d}.face path{fill:none;stroke:#1d1d1d;stroke-width:1.8;stroke-linecap:round}
-.face .brow{display:none}.angry .face .brow{display:inline}
+.face circle{fill:#1d1d1d}.face path{fill:none;stroke:#1d1d1d;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.face .tear{fill:#4a86e8}.face .glass{fill:#111;stroke:none}.face .open{fill:#fff}
+.p.big svg{transform:scale(calc(var(--s,1)*1.35))}.p.big .b{bottom:calc(84px*var(--s,1)*1.35 + 12px)}
+.p.sad.big .nm{bottom:calc(84px*var(--s,1)*1.35 + 4px)}
+.p.pa .b{background:#eceef3;color:#2a2d38;border-color:#8a90a3;border-width:3px;font-weight:700}
+.p.pa .b::after{background:#eceef3;border-color:#8a90a3}
+.p.pa .b::before{content:"точка А";display:block;font-size:11px;font-weight:700;opacity:.7;margin-bottom:2px}
+.p.paa .b{background:#e6e3f5;color:#2a2440;border-color:#7a6fb0;border-width:3px;font-weight:700}
+.p.paa .b::after{background:#e6e3f5;border-color:#7a6fb0}
+.p.paa .b::before{content:"точка АА";display:block;font-size:11px;font-weight:700;opacity:.7;margin-bottom:2px}
+.tooth.flash path{animation:flash .5s ease-in-out 4 alternate}
+@keyframes flash{to{fill:#e8432f}}
+.portal{position:absolute;left:50%;top:48%;width:min(56%,340px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.2);opacity:0;z-index:350;pointer-events:none;transition:transform 1.2s cubic-bezier(.2,1.4,.4,1),opacity .6s}
+.portal.on{transform:translate(-50%,-50%) scale(1);opacity:1}
+.portal svg{width:100%;height:100%;overflow:visible}
+@media(prefers-reduced-motion:reduce){.portal{transition:opacity .3s}.tooth.flash path{animation:none;fill:#e8432f}}
 body[data-v="3"] .face circle,body[data-v="4"] .face circle{fill:var(--fig)}body[data-v="3"] .face path,body[data-v="4"] .face path{stroke:var(--fig)}
+.p.pa .b,.p.paa .b,.p.pb .b{max-width:240px}
 .react .b{font-size:12px;padding:4px 8px;opacity:.92}
 .brag .b{border-width:3px;font-weight:700}
 .botem svg{overflow:visible}
@@ -184,7 +199,7 @@ const mk=(d,kind)=>{const bot=kind===true,sad=kind=='sad';
   if(old){el.setAttribute('aria-hidden','true');el.style.setProperty('--op',(.1+Math.random()*.3).toFixed(2))} // старые: просто рисунок на заднем плане
   else{el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label',p.name+(p.teeth.length?', зуб '+p.teeth.join(', '):''))}
   if(bot){el.className+=' botem';el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><text x="20" y="58" text-anchor="middle" style="font-size:46px">🤖</text></svg><span class="nm"></span>`}
-  else el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}${sad?'<g class="face"><path class="brow" d="M13 8L18 10M27 8L22 10"/><circle cx="16" cy="12" r="1.7"/><circle cx="24" cy="12" r="1.7"/><path class="mouth" d="M14 21Q20 15 26 21"/></g>':''}<path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
+  else el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}<g class="face"></g><path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
   el.querySelector('.nm').textContent=p.name;
   if(!old){el.addEventListener('click',()=>card(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();card(p)}})}
   p.el=el;p.b=el.querySelector('.b');A.append(el);return p};
@@ -222,8 +237,8 @@ const tick=t=>{const dt=Math.min(50,t-last);last=t;
     place(p)}
   requestAnimationFrame(tick)};
 
-const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','react','brag'].forEach(k=>p.el.classList.toggle(k,kind==k));
-  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','react','brag'),ms)};
+const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','pa','paa','react','brag'].forEach(k=>p.el.classList.toggle(k,kind==k));
+  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','pa','paa','react','brag'),ms)};
 /* сколько держать бабл: никуда не торопимся.
    Одиночная фраза (монолог, точка Б, бот) висит ~10 секунд, реплика в диалоге ~5 секунд; длинные чуть дольше. */
 const readMs=(t,mode)=>{const n=String(t).length;
@@ -274,11 +289,51 @@ const soloScene=done=>{
   const end=play(q.map(t=>[p,t]),3000);
   setTimeout(()=>{release([p]);done(3000)},end+500)};
 
+/* Лица по рисунку владельца: код из таблицы «Лица» → черты на кружке головы (центр 20,14, радиус 12) */
+const FACE={
+  'улыбка':'<circle cx="16" cy="11" r="1.6"/><circle cx="24" cy="11" r="1.6"/><path d="M14 17Q20 23 26 17"/>',
+  'грустный':'<path d="M13 8L18 6.5M27 8L22 6.5"/><circle cx="16" cy="11.5" r="1.6"/><circle cx="24" cy="11.5" r="1.6"/><path d="M14 21Q20 15.5 26 21"/>',
+  'очень грустный':'<path d="M13 7.5L18 5.5M27 7.5L22 5.5"/><circle cx="16" cy="11.5" r="1.7"/><circle cx="24" cy="11.5" r="1.7"/><path class="tear" d="M15 14Q14 17 15.5 17.5Q17 17 16 14Z"/><path d="M13 22Q20 14 27 22"/>',
+  'злой':'<path d="M12 7L18 10M28 7L22 10"/><circle cx="16" cy="12" r="1.6"/><circle cx="24" cy="12" r="1.6"/><path d="M14 21Q20 16.5 26 21"/>',
+  'очень злой':'<path d="M11 6L18 10.5M29 6L22 10.5" style="stroke-width:2.8"/><circle cx="16" cy="12.5" r="1.8"/><circle cx="24" cy="12.5" r="1.8"/><path d="M14 20.5H26" style="stroke-width:2.4"/>',
+  'ржущий злой':'<path d="M12 6.5L18 9.5M28 6.5L22 9.5"/><circle cx="16" cy="11.5" r="1.5"/><circle cx="24" cy="11.5" r="1.5"/><path class="open" d="M12.5 16Q20 26 27.5 16Z"/>',
+  'портал':'<path d="M12 6L17 5M28 6L23 5"/><circle cx="15.5" cy="12" r="3.4" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.4"/><circle cx="24.5" cy="12" r="3.4" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.4"/><circle cx="15.5" cy="12.5" r="1.4"/><circle cx="24.5" cy="12.5" r="1.4"/><path d="M13 22.5Q20 16 27 22.5"/>'};
+const GLASSES='<path class="glass" d="M10.5 9.5h8v4.6q0 1.6-1.6 1.6h-4.8q-1.6 0-1.6-1.6zM21.5 9.5h8v4.6q0 1.6-1.6 1.6h-4.8q-1.6 0-1.6-1.6z"/><path d="M18.5 11h3"/><path d="M14.5 18.5Q20 22.5 25.5 18.5"/>';
+const setFace=(p,code,glasses)=>{const g=p.el.querySelector('.face');if(g)g.innerHTML=glasses?GLASSES:(FACE[code]||'')};
+const flashTooth=f=>{if(!f)return;document.querySelectorAll(`.tooth[data-f="${f}"]`).forEach(g=>{g.classList.remove('flash');void g.getBBox();g.classList.add('flash')})};
+const portalEl=()=>{let el=document.getElementById('portal');if(!el){el=document.createElement('div');el.id='portal';el.className='portal';
+  el.innerHTML='<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" style="fill:var(--bub);stroke:var(--fig);stroke-width:1.6"/><g class="face" transform="translate(0 6)">'+FACE['портал']+'</g></svg>';A.append(el)}return el};
+
+/* Коммуникация из таблицы участников: адресат говорит фразу; участник отвечает из точки А (адресат добреет,
+   участник грустнеет), иногда из АА, потом из точки Б (тёмные очки; лицо адресата меняется по таблице,
+   зуб вспыхивает). Если «портал = да» — в центре вырастает портал уебищности, и все шарахаются к краям. */
+const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));if(!list.length)return done(300);
+  const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=rnd(list),p=P[i];
+  const {cx,cy}=spot(),left=Math.random()<.5,gap=Math.max(.08,40/Math.max(AW,1));
+  const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big');setFace(s,f0||'грустный');
+  s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-gap:gap);s.sp=.0002;P.push(s);
+  p.lock=true;p.tx=cx+(left?gap:-gap);p.ty=cy;setFace(p,'улыбка');
+  clear([p],cx,cy);
+  let t=3400;const at=(ms,fn)=>setTimeout(fn,ms),step=(who,txt,kind,mode)=>{const ms=readMs(txt,mode);at(t,()=>say(who,txt,ms,kind));t+=ms+600;return t};
+  step(s,said,'', 'dialog');
+  if(a){const t0=t;step(p,a,'pa','dialog');at(t0+900,()=>{setFace(p,'грустный');setFace(s,fa||'улыбка')})}
+  if(aa){const t0=t;step(p,aa,'paa','dialog');at(t0+900,()=>{setFace(p,'очень грустный');setFace(s,faa||fa||'улыбка')})}
+  if(b){
+    if(a||aa){at(t,()=>{setFace(p,'улыбка');setFace(s,f0||'грустный')});t+=700;step(s,said,'','dialog')}
+    const t0=t;at(t0,()=>setFace(p,'',true));step(p,b,'pb','dialog');
+    at(t0+900,()=>{setFace(s,fb||'очень грустный');flashTooth(tooth)});
+    if(portal){const tp=t;at(tp,()=>{const el=portalEl();el.classList.add('on');
+        zone={l:.15,r:.85,t:0,b:.95};act.filter(o=>o!==p&&!o.lock).forEach(o=>{o.next=0;target(o)})});
+      at(tp+4200,()=>{portalEl().classList.remove('on');zone=null});t+=4600}
+  }
+  at(t+600,()=>{s.tx=left?-.14:1.14;setFace(p,'');release([p])});
+  at(t+3600,()=>{s.el.remove();P.splice(P.indexOf(s),1);done(3000)})};
+
 /* грустнолицый: «папа», «мама», «альфа-жертва»… студент говорит ему фразу точки Б; все молчат */
 const pbScene=done=>{const c=act.filter(p=>p.pb.length&&!p.lock&&(!sel||p.hi));if(!c.length)return done(300);
   const p=rnd(c),[to,txt]=rnd(p.pb),angry=/!/.test(txt)||MATRE.test(txt);
   const {cx,cy}=spot(),left=Math.random()<.5,gap=Math.max(.07,34/Math.max(AW,1));
-  const s=mk({n:to,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.toggle('angry',angry);
+  const s=mk({n:to,g:'u',t:[]},'sad');s.sad=true;s.lock=true;setFace(s,angry?'злой':'грустный');
   s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-gap:gap);s.sp=.0002;P.push(s);
   p.lock=true;p.tx=cx+(left?gap:-gap);p.ty=cy;
   clear([p],cx,cy);
@@ -296,7 +351,10 @@ const BRAG=['Я всё осознала','Я всё поняла','У меня �
   'Меня никак не поменять. Кто хочет меня поменять — сразу в чёрный список'];
 const MASC=[[/осознала/g,'осознал'],[/поняла/g,'понял'],[/самой классной и самой крутой/g,'самым классным и самым крутым'],[/хороша/g,'хорош'],
   [/правой и крутой/g,'правым и крутым'],[/самой главной/g,'самым главным']];
-const brag=p=>{const t=rnd(BRAG);return p.g=='m'?MASC.reduce((s,[r,v])=>s.replace(r,v),t):t};
+/* понты идут связкой: «осознала — поняла — всё пучком», иногда с добавкой из поста */
+const BRAG_CORE=['Я всё осознала.','Я всё поняла.','У меня всё пучком.'];
+const brag=p=>{const extra=BRAG.slice(3),t=BRAG_CORE.join(' ')+(Math.random()<.5?' '+rnd(extra)+'.':'');
+  return p.g=='m'?MASC.reduce((s,[r,v])=>s.replace(r,v),t):t};
 let chase=null;
 const chaseScene=done=>{const c=act.filter(p=>!p.lock&&(!sel||p.hi));if(c.length<3)return done(300);
   const p=rnd(c),txt=brag(p);p.lock=true;chase={p};
@@ -320,8 +378,10 @@ const director=()=>{if(scene)return setTimeout(director,2000);
   if((DATA.solo||[]).length||act.some(p=>p.q.length))chat.push(soloScene,soloScene,soloScene);
   chat.push(chaseScene);
   if(DATA.demo||DATA.bot.length)chat.push(botScene); // бот выходит, только если есть его фразы из разборов
-  const hasB=act.some(p=>p.pb.length);
-  const opts=hasB&&Math.random()<.7?[pbScene]:chat;
+  const special=[];
+  if((DATA.comm||[]).length)special.push(commScene,commScene);
+  if(act.some(p=>p.pb.length))special.push(pbScene);
+  const opts=special.length&&Math.random()<.6?special:chat;
   scene=true;
   rnd(opts)(pause=>{scene=false;setTimeout(director,pause+Math.random()*2000)})};
 

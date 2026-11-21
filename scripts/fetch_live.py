@@ -26,7 +26,7 @@ GS = ROOT / "apps_script" / "live.gs"
 TOOTH_RE = re.compile(r"^[1-4][1-8]$")
 UPDATED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 BAD_TEXT_RE = re.compile(r"https?:|www\.|@\w|#|\d{5,}")
-STATS_KEYS = {"blocks", "efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs", "self_teeth", "nick_teeth"}
+STATS_KEYS = {"blocks", "comm", "table_people", "efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs", "self_teeth", "nick_teeth"}
 
 
 class Bad(Exception):
@@ -121,6 +121,26 @@ def clean(raw, pools):
                 or not 0 <= x[0] < len(out_people) or not isinstance(x[1], list) or not 1 <= len(x[1]) <= 3):
             raise Bad(f"solo[{i}]")
         out_s.append([x[0], [text_ok(t, 210, f"solo[{i}]") for t in x[1]]])
+    FACES = {"", "улыбка", "грустный", "очень грустный", "злой", "очень злой", "ржущий злой", "портал"}
+    comm = raw.get("comm", [])
+    if not isinstance(comm, list) or len(comm) > 200:
+        raise Bad("comm")
+    out_c = []
+    for i, c in enumerate(comm):
+        w = f"comm[{i}]"
+        if not isinstance(c, list) or len(c) != 12:
+            raise Bad(f"{w}: ожидается 12 полей")
+        who, role, f0, said, a, fa, aa, faa, b, fb, portal, tooth = c
+        if not isinstance(who, int) or isinstance(who, bool) or not 0 <= who < len(out_people):
+            raise Bad(f"{w}: номер человека")
+        if not isinstance(role, str) or not re.fullmatch(r"[а-яё -]{0,30}", role):
+            raise Bad(f"{w}: адресат")
+        if any(x not in FACES for x in (f0, fa, faa, fb)):
+            raise Bad(f"{w}: лицо не из списка")
+        if not isinstance(portal, bool) or not (tooth == "" or (isinstance(tooth, str) and TOOTH_RE.match(tooth))):
+            raise Bad(f"{w}: портал или зуб")
+        t = lambda x: "" if x == "" else text_ok(x, 230, w)
+        out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")
@@ -138,6 +158,7 @@ def clean(raw, pools):
         "people": out_people,
         "fights": out_f,
         "solo": out_s,
+        "comm": out_c,
         "react": [text_ok(x, 40, "react") for x in react],
         "bot": [text_ok(x, 130, "bot") for x in bot],
         "stats": {**stats, "blocks": blocks},
