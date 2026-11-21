@@ -24,7 +24,9 @@ var CONFIG = {
   ACTIVE_DAYS: 30,
   QUOTE_DAYS: 180,
   MSG_SHEET: 'Сообщения',
-  CHAMP_SHEET: 'Чемпионат_лог'
+  CHAMP_SHEET: 'Чемпионат_лог',
+  // true: люди из эфиров, которых нет в чате и в словаре прозвищ, тоже стоят на площадке; false: их нет
+  KEEP_UNMATCHED_EFIR: false
 };
 
 // Ники. Те же списки читает scripts/fetch_live.py: ник не из списка не пройдёт проверку.
@@ -73,6 +75,7 @@ function debugLive() {
   var d = out._debug;
   Logger.log('Из эфиров не нашлись в чате (' + d.unmatched.length + '):\n' + d.unmatched.join('\n'));
   Logger.log('Тёзки, выбран первый (' + d.ambiguous.length + '):\n' + d.ambiguous.join('\n'));
+  Logger.log('Кто какой ник:\n' + d.nicks.join('\n'));
   Logger.log('Клиенты из отчётов ЗКФ без пары в чате (' + d.reportMiss.length + '):\n' + d.reportMiss.join('\n'));
   var rows = readInput_().msgs, cT = col_(rows[0], 'Текст'), ex = [];
   for (var i = rows.length - 1; i > 0 && ex.length < 5; i--) if (/Зуб/i.test(rows[i][cT]) && !/Клиент/i.test(rows[i][cT])) ex.push(String(rows[i][cT]).slice(0, 200));
@@ -98,7 +101,8 @@ function readInput_() {
     return { name: s.getName().replace(/\s+/g, ' ').trim().toUpperCase(), display: s.getDataRange().getDisplayValues() };
   });
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
-  return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {} };
+  return { msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
+    nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [] };
 }
 
 // ---------- чистая логика (её же гоняет test/run.js в node) ----------
@@ -239,6 +243,11 @@ function buildLive_(inp, nowMs, salt, hash) {
     seq.push({ ms: ms, p: p, text: text });
   }
 
+  // убранные с площадки (EXCLUDE в «Прозвищах»): их нет ни среди людей, ни в сопоставлении
+  var excl = {};
+  (inp.exclude || []).forEach(function (u) { excl[String(u).replace(/^@/, '').trim().toLowerCase()] = 1; });
+  list = list.filter(function (p) { return !(p.user && excl[p.user]); });
+
   // сопоставление имени из эфиров или отчёта с человеком из чата
   stats.reports = reports.length; stats.point_b = pointB.length;
   var memo = {};
@@ -254,6 +263,7 @@ function buildLive_(inp, nowMs, salt, hash) {
   function matchNew(toks, create) {
     // прозвище из словаря: «янка панамка» → @ник или другое имя
     var al = aliases[toks.join(' ')];
+    if (al === '-') return null; // «забыть»
     if (al) {
       if (al.charAt(0) === '@') {
         var u = al.slice(1).toLowerCase(), byUser = list.filter(function (p) { return p.user === u; })[0];
@@ -296,6 +306,7 @@ function buildLive_(inp, nowMs, salt, hash) {
     if (!create) { debug.reportMiss.push(toks.join(' ')); return null; }
     stats.efir_unmatched++;
     debug.unmatched.push(toks.join(' '));
+    if (!CONFIG.KEEP_UNMATCHED_EFIR) return null;
     var p = person('e:' + toks.join(' '), canon + (rest ? ' ' + rest : ''), '');
     p.first = canon;
     return p;
@@ -307,6 +318,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       if (toks.length === 2 && toks[1].length >= 3 && !match(n, false) && match(toks[0], false) && match(toks[1], false)) parts = toks;
       parts.forEach(function (x) {
         var p = match(x, true);
+        if (!p) return;
         if (m.name === inp.current) p.efirNow = true; else p.efirPast = true;
       });
     });
@@ -355,7 +367,16 @@ function buildLive_(inp, nowMs, salt, hash) {
   realNames.forEach(function (t) { banned[t] = 1; });
   people.sort(function (a, b) { return (a.firstMs === Infinity ? 9e15 : a.firstMs) - (b.firstMs === Infinity ? 9e15 : b.firstMs) || (a.key < b.key ? -1 : 1); });
   var used = {};
+  // ручные ники (NICKS в «Прозвищах»): '@ник_telegram' → 'Паулетта'; пол берётся из списка, где этот ник
+  var nicks = {};
+  Object.keys(inp.nicks || {}).forEach(function (k) { nicks[k.replace(/^@/, '').trim().toLowerCase()] = String(inp.nicks[k]).trim(); });
   people.forEach(function (p) {
+    var want = p.user && nicks[p.user];
+    if (!want || used[want]) return;
+    ['f', 'm', 'u'].forEach(function (g) { if (!p.n && POOLS[g].indexOf(want) >= 0) { p.n = want; p.g = g; used[want] = 1; } });
+  });
+  people.forEach(function (p) {
+    if (p.n) return;
     var pool = POOLS[p.g].filter(function (n) { return !banned[norm_(n)]; });
     var h = hash(salt + '|' + p.key), round = 0, k = h % pool.length, tries = 0, name;
     while (true) {
@@ -366,6 +387,7 @@ function buildLive_(inp, nowMs, salt, hash) {
     }
     used[name] = 1; p.n = name;
   });
+  debug.nicks = people.map(function (p) { return p.n + ' ← ' + p.toks.join(' ') + (p.user ? ' @' + p.user : '') + (p.old ? ' (старый)' : '') + (p.t ? '' : ''); });
 
   // последняя защита от настоящих имён и ников во фразах
   var stems = realNames.filter(function (t) { return t && t.length >= 3; }).map(function (t) { return t.length >= 5 ? t.slice(0, -1) : t; });
