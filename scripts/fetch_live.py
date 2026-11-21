@@ -171,6 +171,7 @@ def main(argv=None):
     except (Bad, OSError, ValueError, TypeError) as e:
         print(f"fetch_live: {e}. data/live.json не изменён.", file=sys.stderr)
         return 1
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)  # data/ может не быть: пустые папки git не хранит
     Path(args.out).write_text(json.dumps(live, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     act = sum(not p["old"] for p in live["people"])
     print(f"fetch_live: ок, {live['updated']}: {act} сейчас, {len(live['people']) - act} в прошлом, "
