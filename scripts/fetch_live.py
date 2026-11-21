@@ -49,6 +49,17 @@ def text_ok(t, max_len, where):
     return t
 
 
+WHOM = {"", "папа", "мама", "родители", "альфа-жертва", "дракон", "муж", "жена", "парень", "девушка", "свекровь",
+        "тёща", "сестра", "брат", "начальник", "подруга", "друг", "коллега", "врач", "ребёнок", "я сам", "мир"}
+
+
+def b_ok(x, where):
+    """Фраза точки Б: [кому, текст]; «кому» только из списка WHOM в live.gs."""
+    if not isinstance(x, list) or len(x) != 2 or x[0] not in WHOM:
+        raise Bad(f"{where}: ожидается [кому, фраза]")
+    return [x[0], text_ok(x[1], 170, where)]
+
+
 def clean(raw, pools):
     if not isinstance(raw, dict):
         raise Bad("ответ не объект")
@@ -85,14 +96,14 @@ def clean(raw, pools):
         out_people.append({
             "n": n, "g": g, "t": t, "old": p["old"], "tr": p["tr"],
             "q": [text_ok(x, 120, f"{w}.q") for x in q],
-            "b": [text_ok(x, 170, f"{w}.b") for x in b],
+            "b": [b_ok(x, f"{w}.b") for x in b],
         })
     fights = raw.get("fights")
     if not isinstance(fights, list) or len(fights) > 60:
         raise Bad("fights")
     out_f = []
     for i, f in enumerate(fights):
-        if not isinstance(f, list) or not 2 <= len(f) <= 4:
+        if not isinstance(f, list) or not 2 <= len(f) <= 8:
             raise Bad(f"fights[{i}]")
         line = []
         for j, (who, txt) in enumerate(f):
@@ -100,6 +111,9 @@ def clean(raw, pools):
                 raise Bad(f"fights[{i}][{j}]: номер человека")
             line.append([who, text_ok(txt, 100, f"fights[{i}][{j}]")])
         out_f.append(line)
+    react = raw.get("react", [])
+    if not isinstance(react, list) or len(react) > 80:
+        raise Bad("react")
     bot = raw.get("bot")
     if not isinstance(bot, list) or len(bot) > 40:
         raise Bad("bot")
@@ -110,6 +124,7 @@ def clean(raw, pools):
         "updated": upd,
         "people": out_people,
         "fights": out_f,
+        "react": [text_ok(x, 40, "react") for x in react],
         "bot": [text_ok(x, 130, "bot") for x in bot],
         "stats": stats,
     }

@@ -141,6 +141,17 @@ function col_(header, name) {
   throw new Error('Нет колонки «' + name + '»');
 }
 
+// кому сказана фраза точки Б → подпись над грустнолицым
+var WHOM = [[/^пап/, 'папа'], [/^от[еца]/, 'папа'], [/^мам/, 'мама'], [/^мат[ери]/, 'мама'], [/^родител/, 'родители'], [/^альфа/, 'альфа-жертва'], [/^жертв/, 'альфа-жертва'],
+  [/^дракон/, 'дракон'], [/^пыхт/, 'дракон'], [/^муж/, 'муж'], [/^жен/, 'жена'], [/^парн/, 'парень'], [/^девушк/, 'девушка'], [/^свекр/, 'свекровь'], [/^тещ|^тёщ/, 'тёща'],
+  [/^сестр/, 'сестра'], [/^брат/, 'брат'], [/^начальн|^босс|^шеф/, 'начальник'], [/^подруг/, 'подруга'], [/^друг/, 'друг'], [/^коллег/, 'коллега'],
+  [/^врач|^стоматолог|^доктор/, 'врач'], [/^реб[её]н|^доч|^сын/, 'ребёнок'], [/^себ|^сам/, 'я сам'], [/^мир|^всем|^люд/, 'мир']];
+function toWhom_(s) {
+  var w = String(s || '').toLowerCase().replace(/ё/g, 'е').trim();
+  for (var i = 0; i < WHOM.length; i++) if (WHOM[i][0].test(w)) return WHOM[i][1];
+  return '';
+}
+
 function genderOf_(first) {
   if (!first) return 'u';
   if (UNISEX[first]) return 'u';
@@ -231,8 +242,12 @@ function buildLive_(inp, nowMs, salt, hash) {
     // точка Б: пост тренера с тегом #точкаБ, строки «@ник — фраза»
     if (trainers[user] && /#точка\s*б/i.test(text)) {
       text.split('\n').forEach(function (line) {
-        var m = /@([A-Za-z0-9_]{3,})\s*[:—–-]\s*(.+)$/.exec(line);
-        if (m) pointB.push({ ms: ms, user: m[1].toLowerCase(), text: m[2] });
+        // «@ник — папе: фраза», «@ник (мама): фраза», «@ник: фраза»
+        var m = /@([A-Za-z0-9_]{3,})\s*(?:\(([^)]{2,25})\))?\s*[:—–-]\s*(.+)$/.exec(line);
+        if (!m) return;
+        var to = m[2] ? toWhom_(m[2]) : '', body = m[3], pre = /^([а-яё -]{2,20}?)\s*[:—–]\s*(.+)$/i.exec(body);
+        if (!to && pre && toWhom_(pre[1])) { to = toWhom_(pre[1]); body = pre[2]; }
+        pointB.push({ ms: ms, user: m[1].toLowerCase(), text: body, to: to });
       });
       continue;
     }
@@ -406,6 +421,14 @@ function buildLive_(inp, nowMs, salt, hash) {
       .forEach(function (x) { if (out.length < cap && !seen[x.t]) { seen[x.t] = 1; out.push(x.t); } });
     return out;
   }
+  function pickB(arr) {
+    var out = [], seen = {};
+    arr.slice().sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); }).forEach(function (x) {
+      var t = clean_(x.text, 160);
+      if (out.length < 10 && t && safe(t) && !seen[t]) { seen[t] = 1; out.push([x.to || '', t]); }
+    });
+    return out;
+  }
   function pickChat(arr) { // в чате берём только мат и восклицания
     return pick(arr.filter(function (x) { return MAT.test(x.text) || /!/.test(x.text); }), 110, 20);
   }
@@ -415,22 +438,56 @@ function buildLive_(inp, nowMs, salt, hash) {
   var idx = new Map();
   people.forEach(function (p, i) { idx.set(p, i); });
 
-  // перепалки: двое по очереди, не дольше 5 минут между репликами
+  // сценки из чата: кусок переписки, где двое отвечают друг другу (минимум по два раза),
+  // а третьи могут влезать. Реплики идут подряд с паузами не больше 5 минут.
   var fights = [];
   seq.sort(function (a, b) { return (a.ms || 0) - (b.ms || 0); });
-  for (var s = 0; s + 1 < seq.length; s++) {
-    var A = seq[s].p, B = seq[s + 1].p;
-    if (A === B || !seq[s].ms || !idx.has(A) || !idx.has(B)) continue;
-    var lines = [], e = s;
-    while (e < seq.length && lines.length < 4 && seq[e].p === (lines.length % 2 ? B : A) && (e === s || seq[e].ms - seq[e - 1].ms <= 5 * 60e3)) {
-      var t = clean_(seq[e].text, 90);
-      if (!t || !safe(t)) break;
-      lines.push([idx.get(seq[e].p), t]);
-      e++;
+  var bursts = [], cur = [];
+  seq.forEach(function (m) {
+    if (!m.ms) return;
+    if (cur.length && m.ms - cur[cur.length - 1].ms > 5 * 60e3) { bursts.push(cur); cur = []; }
+    cur.push(m);
+  });
+  if (cur.length) bursts.push(cur);
+  bursts.forEach(function (b) {
+    for (var k = 0; k < b.length; k += 10) {
+      var L = b.slice(k, k + 12).filter(function (m) { return idx.has(m.p); })
+        .map(function (m) { var t = clean_(m.text, 90); return t && safe(t) ? [m.p, t] : null; })
+        .filter(Boolean);
+      if (L.length < 3) continue;
+      var cnt = new Map();
+      L.forEach(function (l) { cnt.set(l[0], (cnt.get(l[0]) || 0) + 1); });
+      var top = Array.from(cnt.keys()).sort(function (x, y) { return cnt.get(y) - cnt.get(x); });
+      var A = top[0], B = top[1];
+      if (!B || cnt.get(B) < 2) continue;
+      var ab = L.filter(function (l) { return l[0] === A || l[0] === B; }), turns = 0;
+      for (var q = 1; q < ab.length; q++) if (ab[q][0] !== ab[q - 1][0]) turns++;
+      if (turns < 2) continue;
+      var from = 0, to = L.length - 1;
+      while (L[from][0] !== A && L[from][0] !== B) from++;
+      while (L[to][0] !== A && L[to][0] !== B) to--;
+      var others = 0, scene = [];
+      L.slice(from, to + 1).forEach(function (l) {
+        var main = l[0] === A || l[0] === B;
+        if (scene.length >= 8 || (!main && ++others > 3)) return;
+        scene.push([idx.get(l[0]), l[1]]);
+      });
+      if (scene.length >= 3 && scene.some(function (l) { return MAT.test(l[1]) || /!/.test(l[1]); })) fights.push(scene);
     }
-    if (lines.length >= 2 && lines.some(function (l) { return MAT.test(l[1]) || /!/.test(l[1]); })) { fights.push(lines); s = e - 1; }
-  }
-  fights = fights.slice(-40);
+  });
+  fights = fights.slice(-60);
+
+  // реплики толпы: короткие ответы из чата («жесть», «ахахах», «ору»)
+  var react = [], seenR = {};
+  seq.slice().reverse().forEach(function (m) {
+    var t = String(m.text || '').replace(/\s+/g, ' ').trim();
+    if (react.length >= 60 || t.length < 2 || t.length > 24 || seenR[t.toLowerCase()]) return;
+    if (/https?:|www\.|@\w|#|\d{3,}/.test(t) || !/[а-яё]/i.test(t) || !safe(t)) return;
+    if (/[^.!?…]\s[А-ЯЁA-Z][а-яёa-z]+/.test(t)) return;
+    if (!(MAT.test(t) || /!|\)|😂|🤣|ах|ха|жесть|ору|ого|капец|о+х|ну+|да+/i.test(t))) return;
+    seenR[t.toLowerCase()] = 1;
+    react.push(t);
+  });
 
   var bot = pick(botLines.reduce(function (acc, x) {
     String(x.text).split(/(?<=[.!?…])\s+/).forEach(function (t) { acc.push({ ms: x.ms, text: t }); });
@@ -440,9 +497,10 @@ function buildLive_(inp, nowMs, salt, hash) {
   return {
     updated: new Date(nowMs).toISOString().slice(0, 16) + 'Z',
     people: people.map(function (p) {
-      return { n: p.n, g: p.g, t: p.teeth, old: p.old, tr: p.tr, q: pickChat(p.q), b: pick(p.b, 160, 10) };
+      return { n: p.n, g: p.g, t: p.teeth, old: p.old, tr: p.tr, q: pickChat(p.q), b: pickB(p.b) };
     }),
     fights: fights,
+    react: react,
     bot: bot,
     stats: stats,
     _debug: debug // doGet его вырезает

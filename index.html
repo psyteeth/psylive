@@ -73,6 +73,14 @@ body[data-v="4"] .nm{font-size:8px}
 .b::after{content:"";position:absolute;left:14px;bottom:-8px;width:12px;height:12px;background:var(--bub);border-right:2px solid var(--bubl);border-bottom:2px solid var(--bubl);transform:rotate(45deg)}
 .r .b{transform:translateX(calc(-100% + 24px))}.r .b::after{left:auto;right:14px}
 .talk .b{display:block}
+.p.sad .nm:empty{display:none!important}
+.p.sad .nm{display:block;top:auto;bottom:calc(84px*var(--s,1) + 2px);font-size:12px;background:var(--bub);color:var(--bubi);border:1px solid var(--bubl);border-radius:8px;padding:0 6px}
+.p.sad.talk .nm{display:none}
+.face circle{fill:#1d1d1d}.face path{fill:none;stroke:#1d1d1d;stroke-width:1.8;stroke-linecap:round}
+.face .brow{display:none}.angry .face .brow{display:inline}
+body[data-v="3"] .face circle{fill:#ffe2ae}body[data-v="3"] .face path{stroke:#ffe2ae}
+body[data-v="4"] .p.sad .hd{display:none}
+.react .b{font-size:12px;padding:4px 8px;opacity:.92}
 .fight .b{border-color:var(--acc);border-width:3px;font-weight:700}
 .p.pb .b{background:#ffe9a6;color:#2a1d00;border-color:#d9a400;border-width:3px;font-weight:700}
 .p.pb .b::after{background:#ffe9a6;border-color:#d9a400}
@@ -127,10 +135,10 @@ const SOFT=[[/охренели/gi,'обалдели'],[/охренеть/gi,'н�
 const soft=t=>$('#soft').checked?SOFT.reduce((s,[r,v])=>s.replace(r,v),t):t;
 /* демо на случай, если data/live.json не загрузился */
 const DEMO={updated:null,demo:true,people:[
- {n:'Паулетта',g:'f',t:['21'],old:false,q:['Да вы охренели все!','Опять держу лицо, блин'],b:['Мама, хватит меня успокаивать. Я злюсь.']},
- {n:'Хуанито',g:'m',t:['43','33'],old:false,q:['Это не зуб, это мой батя','Ща как скажу им всё!'],b:['Папа, мне не нравится, как ты со мной говоришь.']},
+ {n:'Паулетта',g:'f',t:['21'],old:false,q:['Да вы охренели все!','Опять держу лицо, блин'],b:[['мама','Мама, хватит меня успокаивать. Я злюсь.']]},
+ {n:'Хуанито',g:'m',t:['43','33'],old:false,q:['Это не зуб, это мой батя','Ща как скажу им всё!'],b:[['папа','Папа, мне не нравится, как ты со мной говоришь.']]},
  {n:'Хуетта',g:'f',t:['46'],old:false,q:['Задолбали со своим «всё хорошо»!'],b:[]},
- {n:'Педрито',g:'m',t:['11','21'],old:false,q:['Нахрен медаль за покладистость!'],b:['Я не буду молчать, когда мне неприятно.']},
+ {n:'Педрито',g:'m',t:['11','21'],old:false,q:['Нахрен медаль за покладистость!'],b:[['альфа-жертва','Я не буду молчать, когда мне неприятно!']]},
  {n:'Кончита',g:'f',t:['33'],old:false,q:['Я не злюсь. Я ЗЛЮСЬ!'],b:[]},
  {n:'Панчо',g:'m',t:['47'],old:false,q:['Чё вы ржёте, у меня 47-й горит!'],b:[]},
  {n:'Мерседес',g:'f',t:['36'],old:true,q:[],b:[]},{n:'Альфонсо',g:'m',t:['44'],old:true,q:[],b:[]}],
@@ -156,16 +164,18 @@ T.innerHTML=`<line class="gum" x1="4" x2="${TW-4}" y1="30" y2="30"/><line class=
 /* люди */
 const A=$('#arena');let AW=A.clientWidth,AH=A.clientHeight;
 const ro=new ResizeObserver(()=>{AW=A.clientWidth;AH=A.clientHeight});ro.observe(A);
-const COL={f:'#e46aa2',m:'#4a86e8',u:'#8a7fd0',bot:'#9aa3b5'};
-const mk=(d,bot)=>{
+const COL={f:'#e46aa2',m:'#4a86e8',u:'#8a7fd0',bot:'#9aa3b5',sad:'#7d8597'};
+const MATRE=/ху[йеёяи]|пизд|бля|[её]б[ауил]|сук[аи]|жоп|нахер|хрен/i;
+const mk=(d,kind)=>{const bot=kind===true,sad=kind=='sad';
   const old=!!d.old;
-  const p={name:d.n,g:d.g,teeth:d.t||[],q:d.q||[],pb:d.b||[],c:bot?COL.bot:COL[d.g]||COL.u,old,bot,
+  const p={name:d.n,g:d.g,teeth:d.t||[],q:d.q||[],pb:d.b||[],c:bot?COL.bot:sad?COL.sad:COL[d.g]||COL.u,old,bot,
     x:.04+Math.random()*.92,y:old?Math.random()*.06:.25+Math.random()*.72,sp:.00005+Math.random()*.00005,walk:0,next:0,lock:old,hi:false};
   if(bot){p.x=1.12;p.y=.65;p.lock=true;p.sp=.00008}
+  if(sad)p.lock=true;
   p.tx=p.x;p.ty=p.y;
-  const el=document.createElement('div');el.className='p'+(old?' old':'');el.tabIndex=0;el.setAttribute('role','button');
+  const el=document.createElement('div');el.className='p'+(old?' old':'')+(sad?' sad':'');el.tabIndex=0;el.setAttribute('role','button');
   el.setAttribute('aria-label',p.name+(p.teeth.length?', зуб '+p.teeth.join(', '):''));el.style.setProperty('--c',p.c);
-  el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}<path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
+  el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}${sad?'<g class="face"><path class="brow" d="M13 8L18 10M27 8L22 10"/><circle cx="16" cy="12" r="1.7"/><circle cx="24" cy="12" r="1.7"/><path class="mouth" d="M14 21Q20 15 26 21"/></g>':''}<path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
   el.querySelector('.nm').textContent=p.name;
   el.addEventListener('click',()=>card(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();card(p)}});
   p.el=el;p.b=el.querySelector('.b');A.append(el);return p};
@@ -187,19 +197,58 @@ const tick=t=>{const dt=Math.min(50,t-last);last=t;
     place(p)}
   requestAnimationFrame(tick)};
 
-const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');p.el.classList.toggle('fight',kind=='fight');p.el.classList.toggle('pb',kind=='pb');
-  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb'),ms)};
-const free=()=>act.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&(!sel||p.hi)&&(p.q.length||p.pb.length));
-/* что сказать: точка Б (то, чему человек учится) чаще, чем мат из чата */
-const speak=p=>{if(p.pb.length&&(!p.q.length||Math.random()<.45))say(p,rnd(p.pb),4800,'pb');else say(p,rnd(p.q),3400)};
-const fight=()=>{const f=DATA.fights.length?rnd(DATA.fights):null;if(!f)return;
-  const ids=[...new Set(f.map(l=>l[0]))],a=P[ids[0]],b=P[ids[1]];
-  if(!a||!b||a.lock||b.lock||a.old||b.old||(sel&&!(a.hi&&b.hi)))return;
-  a.lock=b.lock=true;a.tx=Math.min(.95,Math.max(.05,b.x+(b.x>.5?-.08:.08)));a.ty=b.y;b.tx=b.x;b.ty=b.y;
-  f.forEach(([who,l],i)=>setTimeout(()=>say(P[who],l,1900,'fight'),2200+i*1800));
-  setTimeout(()=>{a.lock=b.lock=false;a.next=b.next=0},2200+f.length*1800+600)};
-const botRun=()=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
-  setTimeout(()=>say(bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot),4600),3200);setTimeout(()=>{bot.tx=1.14},8200)};
+const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','react'].forEach(k=>p.el.classList.toggle(k,kind==k));
+  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','react'),ms)};
+const free=()=>act.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&(!sel||p.hi)&&p.q.length);
+/* одиночные фразы из чата: только между сценками */
+const speak=p=>say(p,rnd(p.q),3400);
+
+/* Режиссёр: сценки идут строго по одной. Перепалка из чата, точка Б с грустнолицым, визит бота.
+   Пока идёт сценка, остальные собираются полукругом спереди и по бокам и смотрят. */
+let scene=false;
+const gather=(cast,cx,cy)=>{
+  const crowd=act.filter(p=>!cast.includes(p)&&!p.lock&&(!sel||p.hi));
+  crowd.forEach((p,i)=>{p.lock=true;
+    const t=crowd.length>1?i/(crowd.length-1):.5,ang=Math.PI*(-.08+1.16*t); // от правого бока через перед к левому
+    p.tx=Math.min(.96,Math.max(.04,cx+Math.cos(ang)*(.2+Math.random()*.06)));p.ty=Math.min(.98,cy+.1+Math.sin(ang)*.3)});
+  return crowd};
+const release=ps=>ps.forEach(p=>{if(p.sad)return;p.lock=false;p.next=0});
+const cheer=crowd=>{const R=DATA.react||[];return R.length?setInterval(()=>{const w=crowd.filter(p=>!p.el.classList.contains('talk'));if(w.length)say(rnd(w),rnd(R),1500,'react')},2300):0};
+
+const fightScene=done=>{const f=rnd(DATA.fights);
+  const cnt={};f.forEach(([w])=>cnt[w]=(cnt[w]||0)+1);
+  const cast=Object.keys(cnt).map(Number).sort((x,y)=>cnt[y]-cnt[x]).map(i=>P[i]);
+  if(cast.some(p=>!p||p.old||p.lock)||(sel&&!cast.every(p=>p.hi)))return done(300);
+  const cx=.3+Math.random()*.4,cy=.42+Math.random()*.12;
+  cast.forEach((p,i)=>{p.lock=true;p.tx=i==0?cx-.07:i==1?cx+.07:cx+(i%2?.16:-.16);p.ty=i<2?cy:cy+.08});
+  const crowd=gather(cast,cx,cy),T0=2600,STEP=2000;
+  f.forEach(([who,l],i)=>setTimeout(()=>say(P[who],l,STEP+200,'fight'),T0+i*STEP));
+  const c=cheer(crowd);
+  setTimeout(()=>{clearInterval(c);release([...cast,...crowd]);done(1800)},T0+f.length*STEP+900)};
+
+/* грустнолицый: «папа», «мама», «альфа-жертва»… студент говорит ему фразу точки Б */
+const pbScene=done=>{const c=act.filter(p=>p.pb.length&&!p.lock&&(!sel||p.hi));if(!c.length)return done(300);
+  const p=rnd(c),[to,txt]=rnd(p.pb),angry=/!/.test(txt)||MATRE.test(txt);
+  const cx=.3+Math.random()*.4,cy=.42+Math.random()*.12,left=Math.random()<.5;
+  const s=mk({n:to,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.toggle('angry',angry);
+  s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-.07:.07);s.sp=.0002;P.push(s);
+  p.lock=true;p.tx=cx+(left?.07:-.07);p.ty=cy;
+  const crowd=gather([p],cx,cy); // на точке Б толпа молчит и слушает
+  setTimeout(()=>say(p,txt,5200,'pb'),3600);
+  setTimeout(()=>{s.tx=left?-.14:1.14;release([p,...crowd])},9400);
+  setTimeout(()=>{s.el.remove();P.splice(P.indexOf(s),1);done(800)},12500)};
+
+const botScene=done=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
+  setTimeout(()=>say(bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot),4600),3200);
+  setTimeout(()=>{bot.tx=1.14},8200);setTimeout(()=>done(400),9000)};
+
+const director=()=>{if(scene)return setTimeout(director,2000);
+  const opts=[];
+  if(DATA.fights.length)opts.push(fightScene,fightScene,fightScene);
+  if(act.some(p=>p.pb.length))opts.push(pbScene,pbScene);
+  opts.push(botScene);
+  scene=true;
+  rnd(opts)(pause=>{scene=false;setTimeout(director,pause+Math.random()*1500)})};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
@@ -216,7 +265,7 @@ $('#all').addEventListener('click',()=>{if(sel)pick(sel)});
 
 /* окошко человека */
 const C=$('#card'),tl=f=>`${f} (${tname(f)})`;
-const card=p=>{C.hidden=false;const T2=p.teeth;
+const card=p=>{if(p.sad)return;C.hidden=false;const T2=p.teeth;
   const verb=p.old?(p.g=='f'?'работала':p.g=='m'?'работал':'работал(а)'):'работаю';
   const txt=p.bot?`Привет, я ${p.name}. Приношу цитаты из разборов.`:`Привет, меня зовут ${p.name}. `+(T2.length?`Я ${verb} ${T2.length>1?`с зубами ${T2.slice(0,-1).map(tl).join(', ')} и ${tl(T2[T2.length-1])}`:`с зубом ${tl(T2[0])}`}.`:'Мой зуб пока не записан.');
   C.innerHTML='<button class="x" type="button" aria-label="Закрыть">×</button><p style="padding-right:30px"></p>';
@@ -230,9 +279,8 @@ const start=d=>{DATA=d;
   const upd=d.updated?new Date(d.updated).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'}):null;
   $('#cnt').textContent=d.demo?'Демо: живые данные не загрузились':`${act.length} сейчас · ${old.length} в прошлом · обновлено ${upd}`;
   info();requestAnimationFrame(tick);
-  setInterval(()=>{const c=free();if(c.length)speak(rnd(c))},1300);
-  setTimeout(fight,2500);setInterval(fight,11000);
-  setTimeout(botRun,4000);setInterval(botRun,17000);
+  setInterval(()=>{if(scene)return;const c=free();if(c.length)speak(rnd(c))},1300);
+  setTimeout(director,2500);
   setTimeout(()=>{const c=free();for(let i=0;i<3&&c.length;i++)speak(c.splice(Math.floor(Math.random()*c.length),1)[0])},300)};
 fetch('data/live.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>d.people&&d.people.length?d:DEMO).catch(()=>DEMO).then(start);
 
