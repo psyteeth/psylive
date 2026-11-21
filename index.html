@@ -87,12 +87,12 @@ body[data-v="5"] .hd{stroke:#111;stroke-width:3.5}body[data-v="5"] .bd{stroke-wi
 .p.fighter svg{transform:scale(calc(var(--s,1)*1.3))}.p.big.fighter svg{transform:scale(calc(var(--s,1)*1.55))}
 body[data-v="2"] .p.fighter svg{transform:scale(calc(var(--s,1)*1.75))}body[data-v="2"] .p.big.fighter svg{transform:scale(calc(var(--s,1)*2.05))}
 .p.sad.big.fighter .nm{bottom:calc(84px*var(--s,1)*1.55 + 4px)}body[data-v="2"] .p.sad.big.fighter .nm{bottom:calc(84px*var(--s,1)*2.05 + 4px)}
-.p.fighter{transition:opacity .4s}.p.speaking svg{filter:drop-shadow(0 0 6px var(--acc))}
+.p.fighter{transition:opacity .4s}.p.fighter .nm{display:block;font-size:13px;background:var(--bub);color:var(--bubi);border:1px solid var(--bubl);border-radius:8px;padding:0 6px}.p.speaking svg{filter:drop-shadow(0 0 6px var(--acc))}
 .dlg{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:min(94%,560px);max-height:46%;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;z-index:360;pointer-events:none;opacity:0;transition:opacity .4s}
 .dlg.on{opacity:1}
 .dl{max-width:80%;padding:7px 11px;border-radius:14px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);font-size:15px;line-height:1.3;animation:dlin .35s ease-out;transition:opacity .4s}
 .dl small{display:block;font-size:11px;font-weight:700;opacity:.7;margin-bottom:2px}
-.dl.l{align-self:flex-start}.dl.r{align-self:flex-end}
+.dl{align-self:center;width:100%;max-width:100%}
 .dl.pa{background:#eceef3;color:#2a2d38;border-color:#8a90a3}.dl.paa{background:#e6e3f5;color:#2a2440;border-color:#7a6fb0}
 .dl.pb{background:#ffe9a6;color:#2a1d00;border-color:#d9a400;font-weight:600}
 @keyframes dlin{from{transform:translateY(14px);opacity:0}}
@@ -243,7 +243,10 @@ const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
   p.el.classList.toggle('r',p.x*AW>Math.max(AW*.5,AW-230))};
 let last=performance.now();
 const tick=t=>{const dt=Math.min(50,t-last);last=t;
-  for(const p of P){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
+  for(const p of P){
+    if(p.orb&&t>=p.orb.t0){const o=p.orb,th=o.ph+(t-o.t0)*o.w; // плавное кружение по эллипсу, считается в каждом кадре
+      p.x=p.tx=o.cx+o.R*Math.cos(th);p.y=p.ty=o.cy+o.r*Math.sin(th);p.moving=false;place(p);continue}
+    const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
     if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
     else if(d>.004){const v=Math.min(p.sp*dt*(!p.lock&&zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
     else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+800+Math.random()*3800;else if(t>p.next){p.next=0;target(p)}}}
@@ -340,9 +343,9 @@ const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].ol
   s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-R:R);s.sp=.00022;P.push(s);
   p.lock=true;p.tx=cx+(left?R:-R);p.ty=cy;p.el.classList.add('fighter');setFace(p,'улыбка');const sp0=p.sp;p.sp=.00022;
   clear([p],cx,cy);zone={l:cx-R-.16,r:cx+R+.16,t:0,b:Math.min(.98,cy+r+.18)};DLG.innerHTML='';DLG.classList.add('on');
-  // кружение: друг напротив друга по эллипсу вокруг центра татами
-  let th=left?Math.PI:0;
-  const orbit=setInterval(()=>{if(RM)return;th+=.05;p.tx=cx+R*Math.cos(th);p.ty=cy+r*Math.sin(th);s.tx=cx-R*Math.cos(th);s.ty=cy-r*Math.sin(th)},110);
+  // кружение: друг напротив друга по эллипсу вокруг центра татами, круг примерно за 14 секунд
+  const T0=performance.now()+3000,W=RM?0:2*Math.PI/14000;
+  p.orb={cx,cy,R,r,ph:left?0:Math.PI,t0:T0,w:W};s.orb={cx,cy,R,r,ph:left?Math.PI:0,t0:T0,w:W};
   const nameP=p.name,nameS=role||'адресат',sideS=left?'l':'r',sideP=left?'r':'l';
   let t=3200;const at=(ms,fn)=>setTimeout(fn,ms),step=(who,name,txt,kind,side)=>{const ms=readMs(txt,'dialog');at(t,()=>dlgSay(who,name,txt,kind,side));t+=ms+500;return t};
   step(s,nameS,said,'',sideS);
@@ -356,7 +359,7 @@ const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].ol
         zone={l:.12,r:.88,t:0,b:.97};act.filter(o=>o!==p&&!o.lock).forEach(o=>{o.next=0;target(o)})});
       at(tp+4200,()=>{portalEl().classList.remove('on')});t+=4600}
   }
-  at(t+800,()=>{clearInterval(orbit);DLG.classList.remove('on');s.tx=left?-.14:1.14;setFace(p,'');p.sp=sp0;p.el.classList.remove('fighter');release([p])});
+  at(t+800,()=>{p.orb=null;s.orb=null;DLG.classList.remove('on');s.tx=left?-.14:1.14;setFace(p,'');p.sp=sp0;p.el.classList.remove('fighter');release([p])});
   at(t+3800,()=>{DLG.innerHTML='';s.el.remove();P.splice(P.indexOf(s),1);done(3000)})};
 
 /* грустнолицый: «папа», «мама», «альфа-жертва»… студент говорит ему фразу точки Б; все молчат */
