@@ -121,16 +121,19 @@ def clean(raw, pools):
                 or not 0 <= x[0] < len(out_people) or not isinstance(x[1], list) or not 1 <= len(x[1]) <= 3):
             raise Bad(f"solo[{i}]")
         out_s.append([x[0], [text_ok(t, 210, f"solo[{i}]") for t in x[1]]])
-    FACES = {"", "улыбка", "грустный", "очень грустный", "злой", "очень злой", "ржущий злой", "портал"}
+    FACES = {"", "улыбка", "грустный", "очень грустный", "злой", "очень злой", "ржущий злой", "шок", "бешеный", "портал"}
     comm = raw.get("comm", [])
     if not isinstance(comm, list) or len(comm) > 200:
         raise Bad("comm")
     out_c = []
     for i, c in enumerate(comm):
         w = f"comm[{i}]"
-        if not isinstance(c, list) or len(c) != 12:
-            raise Bad(f"{w}: ожидается 12 полей")
-        who, role, f0, said, a, fa, aa, faa, b, fb, portal, tooth = c
+        if not isinstance(c, list) or len(c) not in (12, 15):
+            raise Bad(f"{w}: ожидается 12 или 15 полей")
+        who, role, f0, said, a, fa, aa, faa, b, fb, portal, tooth = c[:12]
+        ra, rb, chain = (c[12], c[13], c[14]) if len(c) == 15 else ("", "", [])
+        if not isinstance(chain, list) or len(chain) > 8:
+            raise Bad(f"{w}: продолжение_Б")
         if not isinstance(who, int) or isinstance(who, bool) or not 0 <= who < len(out_people):
             raise Bad(f"{w}: номер человека")
         if not isinstance(role, str) or not re.fullmatch(r"[а-яё -]{0,30}", role):
@@ -140,7 +143,8 @@ def clean(raw, pools):
         if not isinstance(portal, bool) or not (tooth == "" or (isinstance(tooth, str) and TOOTH_RE.match(tooth))):
             raise Bad(f"{w}: портал или зуб")
         t = lambda x: "" if x == "" else text_ok(x, 230, w)
-        out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth])
+        out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth,
+                      t(ra), t(rb), [text_ok(x, 230, w) for x in chain]])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")

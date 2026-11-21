@@ -44,7 +44,15 @@ button:focus-visible,.tooth:focus-visible,.p:focus-visible{outline:3px solid var
 .tw{overflow-x:auto}
 .teeth{display:block;width:100%;min-width:640px;height:auto;padding:6px 8px 0}
 .teethM{display:none;min-width:0}
-@media(max-width:600px){.teeth{display:none}.teethM{display:block}.teethM .num{font-size:30px}.teethM .cnt text{font-size:22px}}
+/* телефон: по умолчанию вся формула двумя рядами, уменьшенная под экран; «⤢ крупнее» — четыре ряда по 8 */
+.tw{position:relative}
+.tzoom{display:none;position:absolute;right:6px;top:4px;z-index:5;min-height:36px;padding:0 10px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 13px Inter,system-ui,sans-serif;cursor:pointer}
+@media(max-width:600px){.teeth{min-width:0;padding:42px 2px 0}.teeth .num{font-size:44px}.teeth .cnt circle{r:22px}.teeth .cnt text{font-size:26px}
+  .tzoom{display:inline-flex;align-items:center}
+  /* «крупнее»: та же формула в полный размер, листается пальцем влево-вправо */
+  .tbig .teeth{min-width:980px;padding-top:42px}.tbig .teeth .num{font-size:21px}.tbig .teeth .cnt text{font-size:17px}.tbig .teeth .cnt circle{r:14px}
+  .tzoom{position:sticky;left:calc(100% - 120px);float:right}
+  .tbig::after{content:"← листайте →";position:sticky;left:8px;display:block;width:max-content;font:600 12px Inter,system-ui,sans-serif;color:var(--mute);padding:2px 8px}}
 .tooth{cursor:pointer}
 .tooth path{fill:var(--tooth);stroke:var(--tink);stroke-width:var(--tw);stroke-linejoin:round}
 .tooth:hover path,.tooth:focus-visible path{fill:var(--accs)}
@@ -96,6 +104,17 @@ body[data-v="2"] .p.fighter svg{transform:scale(calc(var(--s,1)*1.75))}body[data
 .dl.pa{background:#eceef3;color:#2a2d38;border-color:#8a90a3}.dl.paa{background:#e6e3f5;color:#2a2440;border-color:#7a6fb0}
 .dl.pb{background:#ffe9a6;color:#2a1d00;border-color:#d9a400;font-weight:600}
 @keyframes dlin{from{transform:translateY(14px);opacity:0}}
+.cmp{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:min(96%,780px);display:flex;flex-wrap:wrap;gap:10px;z-index:370;pointer-events:none;opacity:0;transition:opacity .5s}
+.cmp.on{opacity:1}
+.cmp .box{flex:1 1 300px;background:var(--bg);border:2.5px solid var(--fig);border-radius:10px;padding:8px 10px 10px;display:grid;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.cmp .box.kb{border-color:#d9a400}
+.cmp h4{margin:0;font-size:13px;font-weight:700;color:var(--mute)}
+.cmp .pair{display:flex;justify-content:center;align-items:flex-end;gap:22px;min-height:96px}
+.cmp figure{margin:0;display:grid;justify-items:center;gap:2px}.cmp figcaption{font-size:12px;font-weight:700}
+.cmp .mf{width:34px;height:72px;overflow:visible}.cmp .mf.big{width:46px;height:96px}
+.cmp .ln{display:flex;flex-direction:column;gap:5px}.cmp .dl{max-width:100%;font-size:14px}
+.cmp .box.done{opacity:.75}
+@media(max-width:600px){.cmp .box.done .pair,.cmp .box.done .ln{display:none}.cmp{top:4px}.cmp .box{flex-basis:100%;padding:6px 8px}.cmp .pair{min-height:72px}.cmp .mf{width:26px;height:56px}.cmp .mf.big{width:36px;height:76px}}
 @media(prefers-reduced-motion:reduce){.dl{animation:none}}
 .p.pa .b{background:#eceef3;color:#2a2d38;border-color:#8a90a3;border-width:3px;font-weight:700}
 .p.pa .b::after{background:#eceef3;border-color:#8a90a3}
@@ -144,7 +163,7 @@ body[data-v="5"] .b{border-width:3px;border-radius:18px;font-weight:600;box-shad
   </div>
   <p class="info" id="info" aria-live="polite"></p>
   <div class="stage">
-    <div class="tw"><svg class="teeth" id="teeth" role="group" aria-label="Зубная формула, 32 зуба"></svg><svg class="teeth teethM" id="teethM" role="group" aria-label="Зубная формула, 32 зуба"></svg></div>
+    <div class="tw" id="tw"><button class="tzoom" id="tzoom" type="button" aria-pressed="false">⤢ крупнее</button><svg class="teeth" id="teeth" role="group" aria-label="Зубная формула, 32 зуба"></svg><svg class="teeth teethM" id="teethM" role="group" aria-label="Зубная формула, 32 зуба"></svg></div>
     <div class="arena" id="arena"><div class="card" id="card" hidden></div></div>
   </div>
   <p class="note" id="vdesc"></p>
@@ -313,6 +332,8 @@ const FACE={
   'злой':'<path d="M12 7L18 10M28 7L22 10"/><circle cx="16" cy="12" r="1.6"/><circle cx="24" cy="12" r="1.6"/><path d="M14 21Q20 16.5 26 21"/>',
   'очень злой':'<path d="M11 6L18 10.5M29 6L22 10.5" style="stroke-width:2.8"/><circle cx="16" cy="12.5" r="1.8"/><circle cx="24" cy="12.5" r="1.8"/><path d="M14 20.5H26" style="stroke-width:2.4"/>',
   'ржущий злой':'<path d="M12 6.5L18 9.5M28 6.5L22 9.5"/><circle cx="16" cy="11.5" r="1.5"/><circle cx="24" cy="11.5" r="1.5"/><path class="open" d="M12.5 16Q20 26 27.5 16Z"/>',
+  'шок':'<path d="M12 6.5L17 5.5M28 6.5L23 5.5"/><circle cx="16" cy="11.5" r="2.2" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.2"/><circle cx="24" cy="11.5" r="2.2" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.2"/><circle cx="16" cy="11.8" r="1"/><circle cx="24" cy="11.8" r="1"/><path d="M14 21.5Q20 15.5 26 21.5"/>',
+  'бешеный':'<path d="M11 6L18 9M29 6L22 9" style="stroke-width:2.8"/><circle cx="15.5" cy="12" r="2.8" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.3"/><circle cx="24.5" cy="12" r="2.8" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.3"/><circle cx="15.5" cy="12" r="1.2"/><circle cx="24.5" cy="12" r="1.2"/><path d="M13.5 21Q20 15 26.5 21L25 22Q20 18.5 15 22Z" style="fill:#1d1d1d"/>',
   'портал':'<path d="M12 6L17 5M28 6L23 5"/><circle cx="15.5" cy="12" r="3.4" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.4"/><circle cx="24.5" cy="12" r="3.4" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.4"/><circle cx="15.5" cy="12.5" r="1.4"/><circle cx="24.5" cy="12.5" r="1.4"/><path d="M13 22.5Q20 16 27 22.5"/>'};
 const GLASSES='<path class="glass" d="M10.5 9.5h8v4.6q0 1.6-1.6 1.6h-4.8q-1.6 0-1.6-1.6zM21.5 9.5h8v4.6q0 1.6-1.6 1.6h-4.8q-1.6 0-1.6-1.6z"/><path d="M18.5 11h3"/><path d="M14.5 18.5Q20 22.5 25.5 18.5"/>';
 const setFace=(p,code,glasses)=>{const g=p.el.querySelector('.face');if(g)g.innerHTML=glasses?GLASSES:(FACE[code]||'')};
@@ -323,6 +344,26 @@ const portalEl=()=>{let el=document.getElementById('portal');if(!el){el=document
 /* Коммуникация из таблицы участников: адресат говорит фразу; участник отвечает из точки А (адресат добреет,
    участник грустнеет), иногда из АА, потом из точки Б (тёмные очки; лицо адресата меняется по таблице,
    зуб вспыхивает). Если «портал = да» — в центре вырастает портал уебищности, и все шарахаются к краям. */
+/* Рамки сравнения «точка А · плохие зубы» и «точка Б · хорошие зубы» */
+const CMP=(()=>{const el=document.createElement('div');el.className='cmp';A.append(el);return el})();
+const mini=(code,gl,big,col)=>`<svg class="mf${big?' big':''}" viewBox="0 0 40 84" aria-hidden="true"><circle cx="20" cy="14" r="12" style="fill:var(--bub);stroke:${col};stroke-width:2.5"/><g class="face">${gl?GLASSES:(FACE[code]||'')}</g><path d="M20 26V77M9 50H31M7 77H33" style="fill:none;stroke:var(--fig);stroke-width:2.5;stroke-linecap:round"/></svg>`;
+let cmpState={};
+const cmpOpen=(nameP,nameS,col,hasA,hasB)=>{cmpState={nameP,nameS,col};
+  CMP.innerHTML=(hasA?`<section class="box ka"><h4>точка А · плохие зубы</h4><div class="pair"></div><div class="ln"></div></section>`:'')+
+    (hasB?`<section class="box kb"><h4>точка Б · хорошие зубы</h4><div class="pair"></div><div class="ln"></div></section>`:'');
+  CMP.querySelectorAll('.box').forEach(b=>{b.querySelector('.pair').innerHTML=pairHTML('улыбка','грустный',false);
+    const c=b.querySelectorAll('figcaption');c[0].textContent=nameP;c[1].textContent=nameS});
+  CMP.classList.add('on')};
+const pairHTML=(fp,fs,gl)=>`<figure>${mini(fp,gl,false,cmpState.col)}<figcaption></figcaption></figure><figure>${mini(fs,false,true,'#7d8597')}<figcaption></figcaption></figure>`;
+const cmpLine=(box,who,name,txt,kind,fp,fs,gl)=>{const B=CMP.querySelector('.box.k'+box);if(!B)return;
+  if(box=='b'){const Ab=CMP.querySelector('.box.ka');if(Ab)Ab.classList.add('done')}
+  B.querySelector('.pair').innerHTML=pairHTML(fp||'улыбка',fs,gl);
+  const caps=B.querySelectorAll('figcaption');caps[0].textContent=cmpState.nameP;caps[1].textContent=cmpState.nameS;
+  const d=document.createElement('div');d.className=`dl ${kind||''}`;d.innerHTML='<small></small><span></span>';
+  d.querySelector('small').textContent=name;d.querySelector('span').textContent=soft(txt);
+  const L=B.querySelector('.ln');L.append(d);while(L.children.length>3)L.firstChild.remove()};
+const cmpClose=()=>{CMP.classList.remove('on');setTimeout(()=>{CMP.innerHTML=''},500)};
+
 /* Лента диалога над татами: реплики схватки стопкой, новая снизу выталкивает старые вверх */
 const DLG=(()=>{const el=document.createElement('div');el.className='dlg';el.setAttribute('aria-live','polite');A.append(el);return el})();
 const dlgSay=(who,name,txt,kind,side)=>{const d=document.createElement('div');d.className=`dl ${kind||''} ${side}`;
@@ -337,7 +378,7 @@ const dlgSay=(who,name,txt,kind,side)=>{const d=document.createElement('div');d.
    адресата меняется по таблице, зуб вспыхивает). Пока идёт схватка, оба крупнее и кружат по центру,
    как бойцы на ринге, а реплики стопкой поднимаются над татами. «портал = да» — портал уебищности. */
 const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));if(!list.length)return done(300);
-  const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=rnd(list),p=P[i];
+  const C=rnd(list),[i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=C,p=P[i];
   const cx=.5,cy=.66,left=Math.random()<.5,R=Math.max(.09,70/Math.max(AW,1)),r=.08;
   const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big','fighter');setFace(s,f0||'грустный');
   s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-R:R);s.sp=.00022;P.push(s);
@@ -349,16 +390,27 @@ const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].ol
   const nameP=p.name,nameS=role||'адресат',sideS=left?'l':'r',sideP=left?'r':'l';
   let t=3200;const at=(ms,fn)=>setTimeout(fn,ms),step=(who,name,txt,kind,side)=>{const ms=readMs(txt,'dialog');at(t,()=>dlgSay(who,name,txt,kind,side));t+=ms+500;return t};
   step(s,nameS,said,'',sideS);
-  if(a){const t0=t;step(p,nameP,a,'pa',sideP);at(t0+700,()=>{setFace(p,'грустный');setFace(s,fa||'улыбка')})}
-  if(aa){const t0=t;step(p,nameP,aa,'paa',sideP);at(t0+700,()=>{setFace(p,'очень грустный');setFace(s,faa||fa||'улыбка')})}
+  // Сравнение: две рамки, как на рисунке. В каждой — маленький персонаж и большой адресат со своими лицами и репликами.
+  const ra=C[12]||'',rb=C[13]||'',chain=C[14]||[];
+  at(t,()=>{DLG.classList.remove('on');cmpOpen(nameP,nameS,p.c,!!a||!!aa,!!b)});t+=900;
+  const line=(box,who,name,txt,kind,fp,fs,gl)=>{const ms=readMs(txt,'dialog');at(t,()=>cmpLine(box,who,name,txt,kind,fp,fs,gl));t+=ms+400};
+  if(a||aa){
+    if(a)line('a','p',nameP,a,'pa','грустный',f0||'грустный');
+    if(aa)line('a','p',nameP,aa,'paa','очень грустный',fa||'улыбка');
+    line('a','s',nameS,ra||'…','', aa?'очень грустный':'грустный',faa||fa||'улыбка');
+    at(t,()=>{setFace(p,'грустный');setFace(s,fa||'улыбка')});t+=900;
+  }
   if(b){
-    if(a||aa){at(t,()=>{setFace(p,'улыбка');setFace(s,f0||'грустный')});t+=600;step(s,nameS,said,'',sideS)}
-    const t0=t;at(t0,()=>setFace(p,'',true));step(p,nameP,b,'pb',sideP);
-    at(t0+700,()=>{setFace(s,fb||'очень грустный');flashTooth(tooth)});
+    line('b','p',nameP,b,'pb','',f0||'грустный',true);
+    at(t-400,()=>{setFace(p,'',true);setFace(s,fb||'шок');flashTooth(tooth)});
+    line('b','s',nameS,rb||'Чтооо?','','',fb||'шок',true);
+    const esc=['злой','бешеный','очень злой','бешеный'];
+    chain.forEach((x,k)=>{const fromS=k%2==0;line('b',fromS?'s':'p',fromS?nameS:nameP,x,fromS?'':'pb','',fromS?esc[Math.min(k>>1,3)]:'',true)});
     if(portal){const tp=t;at(tp,()=>{const el=portalEl();el.classList.add('on');
         zone={l:.12,r:.88,t:0,b:.97};act.filter(o=>o!==p&&!o.lock).forEach(o=>{o.next=0;target(o)})});
       at(tp+4200,()=>{portalEl().classList.remove('on')});t+=4600}
   }
+  at(t+600,()=>cmpClose());t+=600;
   at(t+800,()=>{p.orb=null;s.orb=null;DLG.classList.remove('on');s.tx=left?-.14:1.14;setFace(p,'');p.sp=sp0;p.el.classList.remove('fighter');release([p])});
   at(t+3800,()=>{DLG.innerHTML='';s.el.remove();P.splice(P.indexOf(s),1);done(3000)})};
 
@@ -427,6 +479,7 @@ const info=()=>{const I=$('#info');I.textContent='';
 const pick=f=>{sel=sel===f?null:f;
   document.querySelectorAll('.tooth').forEach(g=>{g.classList.toggle('sel',g.dataset.f===sel);g.setAttribute('aria-pressed',g.dataset.f===sel)});
   P.forEach(p=>{p.hi=!!sel&&!p.old&&p.teeth.includes(sel);p.el.classList.toggle('hi',p.hi);p.el.classList.toggle('dim',!!sel&&!p.hi&&!p.bot);if(!p.lock){p.next=0;target(p)}});info()};
+$('#tzoom').addEventListener('click',e=>{const on=$('#tw').classList.toggle('tbig');e.currentTarget.textContent=on?'⤡ мельче':'⤢ крупнее';if(on)$('#tw').scrollLeft=($('#tw').scrollWidth-$('#tw').clientWidth)/2;e.currentTarget.setAttribute('aria-pressed',on)});
 [T,TM].forEach(svg=>{svg.addEventListener('click',e=>{const g=e.target.closest('.tooth');if(g)pick(g.dataset.f)});
   svg.addEventListener('keydown',e=>{const g=e.target.closest('.tooth');if(g&&(e.key=='Enter'||e.key==' ')){e.preventDefault();pick(g.dataset.f)}})});
 $('#all').addEventListener('click',()=>{if(sel)pick(sel)});

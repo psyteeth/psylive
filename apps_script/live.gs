@@ -743,7 +743,7 @@ function buildLive_(inp, nowMs, salt, hash) {
 
   // Коммуникации из таблицы участников: адресат говорит фразу, участник отвечает из точки А, (АА) и Б.
   // Только «на_сайт = да» у строки и «показ_на_сайте = да» у участника. Фильтр имён и личного действует.
-  var FACES = { 'улыбка': 1, 'грустный': 1, 'очень грустный': 1, 'злой': 1, 'очень злой': 1, 'ржущий злой': 1, 'портал': 1 };
+  var FACES = { 'улыбка': 1, 'грустный': 1, 'очень грустный': 1, 'злой': 1, 'очень злой': 1, 'ржущий злой': 1, 'шок': 1, 'бешеный': 1, 'портал': 1 };
   var comm = [];
   stats.comm = 0;
   if (inp.ptComm && inp.ptComm.length > 2) {
@@ -760,8 +760,13 @@ function buildLive_(inp, nowMs, salt, hash) {
       if (!said || a === null || aa === null || b === null || (!a && !b)) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
       var role = cell(r, 'адресат_роль').toLowerCase().replace(/[^а-яё -]/g, '').slice(0, 30);
       var tooth = (cell(r, 'зуб').match(/\b[1-4][1-8]\b/) || [''])[0];
+      // что адресат отвечает на А («молодец») и на Б («чтооо?»), и как перепалка в Б продолжается:
+      // «продолжение_Б» — реплики через « / », по очереди адресат и участник
+      var ra = txt(cell(r, 'реакция_после_А')), rb = txt(cell(r, 'реакция_после_Б'));
+      var chain = cell(r, 'продолжение_Б').split(/\s*\/\s*|\n+/).map(function (x) { return txt(x.trim()); });
+      if (ra === null || rb === null || chain.some(function (x) { return x === null; })) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
       comm.push([idx.get(p), role, face(cell(r, 'лицо_адресата')), said, a, face(cell(r, 'лицо_после_А')), aa, face(cell(r, 'лицо_после_АА')),
-        b, face(cell(r, 'лицо_после_Б')), cell(r, 'портал').toLowerCase() === 'да', tooth]);
+        b, face(cell(r, 'лицо_после_Б')), cell(r, 'портал').toLowerCase() === 'да', tooth, ra, rb, chain.filter(Boolean).slice(0, 8)]);
     });
     stats.comm = comm.length;
   }
