@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Психостоматология вживую</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Neucha&family=Rubik:wght@500;700&family=Playfair+Display:wght@700&family=Press+Start+2P&family=Manrope:wght@500;700&display=swap">
+<style>
+/* VOICE: игровой, живой, с матом из чата; первая страница по скетчу владельца
+   IDEA: зубная формула над площадкой, где гуляют человечки-участники и говорят баблами
+   PICTURE: 32 кликабельных зуба + площадка с фигурками «кружок, палка, две перекладины»
+   COLOUR/TYPE: пять вариантов, у каждого своя палитра и шрифт (блокнот, аппликация, тени, пиксели, чистый)
+   LAYOUT: шапка с переключателем вариантов, строка зуба, сцена во всю ширину */
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);overflow-x:clip;color-scheme:var(--cs)}
+body[data-v="1"]{--cs:light;--font:Neucha,"Comic Sans MS",cursive;--bg:#fbfaf5;--ink:#2a2a35;--mute:#5d5d6c;--stage:transparent;--arena:transparent;--tooth:#fff;--tink:#2a2a35;--tnum:#2a2a35;--fig:#2a2a35;--acc:#d2452f;--acct:#fff;--accs:#fde3dc;--bub:#fff;--bubi:#2a2a35;--bubl:#2a2a35;--tw:2.5;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,#d3def0 31px 32px)}
+body[data-v="2"]{--cs:light;--font:Rubik,system-ui,sans-serif;--bg:#fff4cf;--ink:#1d1d1d;--mute:#4f4a3a;--stage:#ffe08a;--arena:linear-gradient(#86cdf2 0 36%,#8fce6a 36%);--tooth:#fff;--tink:#1d1d1d;--tnum:#1d1d1d;--fig:#1d1d1d;--acc:#e8432f;--acct:#fff;--accs:#ffd2c8;--bub:#fff;--bubi:#1d1d1d;--bubl:#1d1d1d;--tw:4;--sb:3px solid #1d1d1d}
+body[data-v="3"]{--cs:dark;--font:Manrope,system-ui,sans-serif;--hfont:"Playfair Display",Georgia,serif;--bg:#1c120d;--ink:#f6dcb8;--mute:#c9a988;--stage:radial-gradient(ellipse at 50% 60%,#ffe2ae 0,#eeaa5e 50%,#7d3d1c 100%);--arena:transparent;--tooth:#1a100c;--tink:#1a100c;--tnum:#1a100c;--fig:#1a100c;--acc:#fff1d6;--acct:#1a100c;--accs:#5a3322;--bub:#fff4df;--bubi:#1a100c;--bubl:#1a100c;--tw:2;--nm:#1a100c}
+body[data-v="4"]{--cs:dark;--font:"Press Start 2P",monospace;--bg:#15121f;--ink:#f4f1e8;--mute:#b9b2d6;--stage:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 8px),#2c2546;--arena:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 8px),linear-gradient(#2c2546 0 30%,#2f5a3e 30%);--tooth:#f4f1e8;--tink:#0f0c1a;--tnum:#f4f1e8;--fig:#f4f1e8;--acc:#ffcc33;--acct:#0f0c1a;--accs:#6c5fb0;--bub:#f4f1e8;--bubi:#0f0c1a;--bubl:#0f0c1a;--tw:4;--r:0;--sr:0;font-size:11px}
+body[data-v="5"]{--cs:light dark;--font:Manrope,system-ui,sans-serif;--bg:light-dark(#f4f5f9,#101218);--ink:light-dark(#151823,#e9ecf5);--mute:light-dark(#5b6175,#9aa1b6);--stage:light-dark(#fff,#181b24);--arena:transparent;--tooth:light-dark(#fff,#e3e6ee);--tink:light-dark(#b9bfd0,#5a6178);--tnum:light-dark(#5b6175,#9aa1b6);--fig:light-dark(#151823,#e9ecf5);--acc:light-dark(#3352ff,#8aa0ff);--acct:light-dark(#fff,#101218);--accs:light-dark(#e3e8ff,#2a3150);--bub:light-dark(#fff,#262b38);--bubi:light-dark(#151823,#e9ecf5);--bubl:light-dark(#dfe3ee,#3a4054);--tw:2;--sb:1px solid light-dark(#e1e4ee,#272b38)}
+:root[data-theme=light] body[data-v="5"]{--cs:light}:root[data-theme=dark] body[data-v="5"]{--cs:dark}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 36px;padding-left:max(16px,4vw);padding-right:max(16px,4vw);display:grid;gap:14px}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between}
+h1{font-family:var(--hfont,var(--font));font-size:clamp(26px,4vw,40px);line-height:1.08;margin:0;text-wrap:balance}
+body[data-v="4"] h1{font-size:clamp(15px,2.4vw,22px);line-height:1.5}
+.sub,.note{margin:0;color:var(--mute);font-size:.9em}
+.tabs,.ctrl{display:flex;flex-wrap:wrap;gap:6px}
+.ctrl{gap:8px 18px;align-items:center}
+button{font:inherit}
+.tabs button,.ctrl button{min-height:42px;padding:0 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);border-radius:var(--r,999px);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+button:focus-visible,.tooth:focus-visible,.p:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.ctrl label{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.ctrl input{width:20px;height:20px;accent-color:var(--acc)}
+.info{margin:0;min-height:3em;font-size:1.05em}
+.info b{font-size:1.25em}
+.stage{background:var(--stage);border-radius:var(--sr,18px);overflow:hidden;border:var(--sb,0)}
+.tw{overflow-x:auto}
+.teeth{display:block;width:100%;min-width:640px;height:auto;padding:6px 8px 0}
+.tooth{cursor:pointer}
+.tooth path{fill:var(--tooth);stroke:var(--tink);stroke-width:var(--tw);stroke-linejoin:round}
+.tooth:hover path,.tooth:focus-visible path{fill:var(--accs)}
+.tooth.sel path{fill:var(--acc)}
+.num{fill:var(--tnum);font:700 21px var(--font);text-anchor:middle}
+body[data-v="4"] .num{font-size:15px}
+.cnt circle{fill:var(--acc)}.cnt text{fill:var(--acct);font:700 17px Manrope,sans-serif;text-anchor:middle;dominant-baseline:central}
+.gum{stroke:var(--tink);stroke-width:var(--tw)}.midl{stroke:var(--tink);stroke-dasharray:6 8;stroke-width:2}
+body[data-v="4"] .teeth{shape-rendering:crispEdges}
+body[data-v="1"] .tooth path,body[data-v="1"] .p svg{filter:url(#rough)}
+.arena{position:relative;height:clamp(380px,58vh,600px);overflow:hidden;background:var(--arena)}
+.p{position:absolute;left:0;top:0;width:40px;height:84px;cursor:pointer;transition:opacity .4s}
+.p svg{width:40px;height:84px;overflow:visible;transform:scale(var(--s,1));transform-origin:50% 100%;display:block}
+.hd{fill:var(--c)}.hs{display:none;fill:var(--c)}
+.bd{fill:none;stroke:var(--fig);stroke-width:3;stroke-linecap:round}
+.sh{fill:rgba(0,0,0,.16);display:none}
+.em{font-size:15px;text-anchor:middle;dominant-baseline:central}
+body[data-v="1"] .hd{fill:var(--bg);stroke:var(--c);stroke-width:3}body[data-v="1"] .bd{stroke-width:2.5}
+body[data-v="2"] .hd{stroke:var(--fig);stroke-width:3}body[data-v="2"] .bd{stroke-width:5}body[data-v="2"] .sh{display:inline}
+body[data-v="3"] .hd{fill:var(--fig)}body[data-v="3"] .bd{stroke-width:4}
+body[data-v="4"] .hd{display:none}body[data-v="4"] .hs{display:inline}body[data-v="4"] .bd{stroke:var(--c);stroke-width:4;stroke-linecap:square}body[data-v="4"] .p svg{shape-rendering:crispEdges}
+body[data-v="5"] .bd{stroke:var(--c);stroke-width:3.5}body[data-v="5"] .sh{display:inline}
+.nm{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:12px;white-space:nowrap;display:none;color:var(--nm,var(--ink));font-weight:700}
+body[data-v="4"] .nm{font-size:8px}
+.p:hover .nm,.p.hi .nm,.p:focus-visible .nm{display:block}
+.p.hi svg{filter:drop-shadow(0 0 5px var(--acc)) drop-shadow(0 0 2px var(--acc))}
+.p.old{opacity:.3;filter:grayscale(1)}.p.old.hi{opacity:.75}
+.p.dim{opacity:.13}
+.noold .p.old{display:none}
+.b{display:none;position:absolute;left:50%;bottom:calc(84px*var(--s,1) + 12px);transform:translateX(-24px);width:max-content;max-width:200px;padding:7px 11px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:16px;font-size:14px;line-height:1.25;z-index:2}
+.b::after{content:"";position:absolute;left:14px;bottom:-8px;width:12px;height:12px;background:var(--bub);border-right:2px solid var(--bubl);border-bottom:2px solid var(--bubl);transform:rotate(45deg)}
+.r .b{transform:translateX(calc(-100% + 24px))}.r .b::after{left:auto;right:14px}
+.talk .b{display:block}
+.fight .b{border-color:var(--acc);border-width:3px;font-weight:700}
+.p.pb .b{background:#ffe9a6;color:#2a1d00;border-color:#d9a400;border-width:3px;font-weight:700}
+.p.pb .b::after{background:#ffe9a6;border-color:#d9a400}
+.p.pb .b::before{content:"точка Б";display:block;font-size:11px;font-weight:700;letter-spacing:.02em;opacity:.7;margin-bottom:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.9em;color:var(--mute);margin:0}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:2px solid}
+body[data-v="1"] .b{font-size:17px;border-radius:22px 16px 20px 14px}
+body[data-v="2"] .b{border-width:3px;font-weight:500;border-radius:20px}
+body[data-v="2"] .fight .b{background:#fff0a8;border-color:#1d1d1d}
+body[data-v="3"] .b{border-radius:4px;border-width:1px}
+body[data-v="4"] .b{font-size:9px;line-height:1.6;border-radius:0;border-width:3px;box-shadow:4px 4px 0 #0f0c1a}
+body[data-v="4"] .b::after{border-width:3px}
+body[data-v="5"] .b{border-width:1px;box-shadow:0 6px 18px rgba(20,24,40,.12)}
+.card{position:absolute;top:12px;right:12px;z-index:400;width:min(270px,calc(100% - 24px));background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:var(--r,14px);padding:14px 16px;display:grid;gap:6px;font-size:14px}
+.card p{margin:0}.card .ch{display:flex;gap:8px;align-items:center;font-size:18px}.card .ch i{width:14px;height:14px;border-radius:50%}
+.card .x{position:absolute;top:4px;right:4px;width:40px;height:40px;border:0;background:transparent;color:inherit;font-size:22px;cursor:pointer}
+.card .note{color:inherit;opacity:.7}
+@media(prefers-reduced-motion:reduce){.p{transition:none}}
+</style>
+</head>
+<body data-v="1">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter></svg>
+<div class="wrap">
+  <header class="top">
+    <div style="display:grid;gap:4px"><h1>Психостоматология вживую</h1><p class="sub" id="cnt"></p></div>
+    <div class="tabs" role="tablist" aria-label="Вариант дизайна" id="tabs">
+      <button role="tab" data-v="1">1 · Блокнот</button><button role="tab" data-v="2">2 · Аппликация</button><button role="tab" data-v="3">3 · Театр теней</button><button role="tab" data-v="4">4 · Пиксели</button><button role="tab" data-v="5">5 · Чистый</button>
+    </div>
+  </header>
+  <div class="ctrl">
+    <label for="old"><input type="checkbox" id="old" checked> старые студенты</label>
+    <label for="soft"><input type="checkbox" id="soft"> мягкая версия (без мата)</label>
+    <button id="all" type="button">показать всех</button>
+  </div>
+  <p class="info" id="info" aria-live="polite"></p>
+  <div class="stage">
+    <div class="tw"><svg class="teeth" id="teeth" role="group" aria-label="Зубная формула, 32 зуба"></svg></div>
+    <div class="arena" id="arena"><div class="card" id="card" hidden></div></div>
+  </div>
+  <p class="note" id="vdesc"></p>
+  <p class="legend"><span><i style="background:var(--bub);border-color:var(--bubl)"></i>из чата</span><span><i style="background:#ffe9a6;border-color:#d9a400"></i>точка Б: так человек учится говорить</span><span><i style="background:var(--bub);border-color:var(--acc)"></i>перепалка</span></p>
+  <p class="note">Все имена здесь ники. Фразы берутся из чатов психостоматологии, точки Б из постов тренеров после эфиров.</p>
+</div>
+<script>
+{
+const $=s=>document.querySelector(s), rnd=a=>a[Math.floor(Math.random()*a.length)];
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const QN={1:'верхний правый',2:'верхний левый',3:'нижний левый',4:'нижний правый'};
+const TN={1:'центральный резец',2:'боковой резец',3:'клык',4:'первый премоляр',5:'второй премоляр',6:'первый моляр',7:'второй моляр',8:'зуб мудрости'};
+const tname=f=>`${QN[f[0]]} ${TN[f[1]]}`, cap=s=>s[0].toUpperCase()+s.slice(1);
+const VD={1:'Как на листочке: тетрадь в линейку, карандаш, зубы и человечки чуть дрожат.',2:'Плоские фигурки из цветной бумаги на фоне неба и травы. Ярко и громко, удобно для мемов.',3:'Силуэты на подсвеченном экране. Баблы читаются издалека, старые студенты уходят в тень.',4:'Игровая площадка в пикселях: человечки бегают, как в старой приставке.',5:'Спокойная рабочая версия: цвет только у людей. Подстраивается под светлую и тёмную тему.'};
+const SOFT=[[/охренели/gi,'обалдели'],[/охренеть/gi,'ничего себе'],[/нахрен/gi,'к чёрту'],[/блин/gi,'ох'],[/бля[а-яё]*/gi,'ох'],[/задолбал[а-яё]*/gi,'достали'],[/ху[йеёия][а-яё]*/gi,'…'],[/пизд[а-яё]*/gi,'…'],[/[её]б[а-яё]*/gi,'…']];
+const soft=t=>$('#soft').checked?SOFT.reduce((s,[r,v])=>s.replace(r,v),t):t;
+/* демо на случай, если data/live.json не загрузился */
+const DEMO={updated:null,demo:true,people:[
+ {n:'Паулетта',g:'f',t:['21'],old:false,q:['Да вы охренели все!','Опять держу лицо, блин'],b:['Мама, хватит меня успокаивать. Я злюсь.']},
+ {n:'Хуанито',g:'m',t:['43','33'],old:false,q:['Это не зуб, это мой батя','Ща как скажу им всё!'],b:['Папа, мне не нравится, как ты со мной говоришь.']},
+ {n:'Хуетта',g:'f',t:['46'],old:false,q:['Задолбали со своим «всё хорошо»!'],b:[]},
+ {n:'Педрито',g:'m',t:['11','21'],old:false,q:['Нахрен медаль за покладистость!'],b:['Я не буду молчать, когда мне неприятно.']},
+ {n:'Кончита',g:'f',t:['33'],old:false,q:['Я не злюсь. Я ЗЛЮСЬ!'],b:[]},
+ {n:'Панчо',g:'m',t:['47'],old:false,q:['Чё вы ржёте, у меня 47-й горит!'],b:[]},
+ {n:'Мерседес',g:'f',t:['36'],old:true,q:[],b:[]},{n:'Альфонсо',g:'m',t:['44'],old:true,q:[],b:[]}],
+ fights:[[[0,'Ты опять за всех решила!'],[2,'А ты опять молчишь!'],[0,'Я не молчу, я держу лицо!'],[2,'Вот и держи, блин!']]],
+ bot:['Разбор: злость пришла, лицо держишь, зуб платит.','Напоминаю: листочек сам себя не напишет.']};
+
+/* зубы */
+const WD={1:92,2:80,3:88,4:90,5:90,6:106,7:104,8:98};
+const UP=[18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28],LO=[48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+const H=88;
+const shape=(p,w)=>{
+  if(p<=2)return `M4 0V${H-10}Q4 ${H} 14 ${H}H${w-14}Q${w-4} ${H} ${w-4} ${H-10}V0Z`;
+  if(p==3)return `M6 0V${H-28}L${w/2} ${H}L${w-6} ${H-28}V0Z`;
+  if(p<=5)return `M6 0V${H-16}Q${w*.28} ${H} ${w/2} ${H-12}Q${w*.72} ${H} ${w-6} ${H-16}V0Z`;
+  return `M3 0V${H-14}Q${w*.18} ${H} ${w*.34} ${H-12}Q${w*.5} ${H-22} ${w*.66} ${H-12}Q${w*.82} ${H} ${w-3} ${H-14}V0Z`};
+let x=8;const xs=[];UP.forEach((f,i)=>{if(i==8)x+=18;xs.push(x);x+=WD[f%10]+6});
+const TW=x+4,mid=xs[8]-12;
+const T=$('#teeth');T.setAttribute('viewBox',`0 0 ${TW} 266`);
+const tooth=(f,i,low)=>{const w=WD[f%10],X=xs[i],s=String(f);
+  return `<g class="tooth" data-f="${s}" role="button" tabindex="0" aria-label="Зуб ${s}, ${tname(s)}"><path transform="translate(${X},${low?234:30})${low?' scale(1,-1)':''}" d="${shape(f%10,w)}"/><text class="num" x="${X+w/2}" y="${low?260:22}">${s}</text><g class="cnt" id="c${s}"></g></g>`};
+T.innerHTML=`<line class="gum" x1="4" x2="${TW-4}" y1="30" y2="30"/><line class="gum" x1="4" x2="${TW-4}" y1="234" y2="234"/><line class="midl" x1="${mid}" x2="${mid}" y1="2" y2="264"/>`+UP.map((f,i)=>tooth(f,i,0)).join('')+LO.map((f,i)=>tooth(f,i,1)).join('');
+
+/* люди */
+const A=$('#arena');let AW=A.clientWidth,AH=A.clientHeight;
+const ro=new ResizeObserver(()=>{AW=A.clientWidth;AH=A.clientHeight});ro.observe(A);
+const COL={f:'#e46aa2',m:'#4a86e8',u:'#8a7fd0',bot:'#9aa3b5'};
+const mk=(d,bot)=>{
+  const old=!!d.old;
+  const p={name:d.n,g:d.g,teeth:d.t||[],q:d.q||[],pb:d.b||[],c:bot?COL.bot:COL[d.g]||COL.u,old,bot,
+    x:.04+Math.random()*.92,y:old?Math.random()*.06:.25+Math.random()*.72,sp:.00005+Math.random()*.00005,walk:0,next:0,lock:old,hi:false};
+  if(bot){p.x=1.12;p.y=.65;p.lock=true;p.sp=.00008}
+  p.tx=p.x;p.ty=p.y;
+  const el=document.createElement('div');el.className='p'+(old?' old':'');el.tabIndex=0;el.setAttribute('role','button');
+  el.setAttribute('aria-label',p.name+(p.teeth.length?', зуб '+p.teeth.join(', '):''));el.style.setProperty('--c',p.c);
+  el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}<path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
+  el.querySelector('.nm').textContent=p.name;
+  el.addEventListener('click',()=>card(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();card(p)}});
+  p.el=el;p.b=el.querySelector('.b');A.append(el);return p};
+
+let P=[],act=[],old=[],bot=null,DATA=DEMO,sel=null;
+const target=p=>{if(p.lock)return;p.tx=.04+Math.random()*.92;
+  p.ty=sel?(p.hi?.72+Math.random()*.26:.22+Math.random()*.3):.25+Math.random()*.72};
+const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
+  const fy=104+p.y*(AH-118),bob=p.moving&&!RM?Math.abs(Math.sin(p.walk/110))*3:0;
+  p.el.style.transform=`translate(${(p.x*AW-20).toFixed(1)}px,${(fy-84-bob).toFixed(1)}px)`;
+  p.el.style.setProperty('--s',s.toFixed(3));p.el.style.zIndex=p.el.classList.contains('talk')?300:Math.round(p.y*100);
+  p.el.classList.toggle('r',p.x*AW>Math.max(AW*.5,AW-230))};
+let last=performance.now();
+const tick=t=>{const dt=Math.min(50,t-last);last=t;
+  for(const p of P){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
+    if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
+    else if(d>.004){const v=Math.min(p.sp*dt,d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
+    else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+800+Math.random()*3800;else if(t>p.next){p.next=0;target(p)}}}
+    place(p)}
+  requestAnimationFrame(tick)};
+
+const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');p.el.classList.toggle('fight',kind=='fight');p.el.classList.toggle('pb',kind=='pb');
+  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb'),ms)};
+const free=()=>act.filter(p=>!p.lock&&!p.el.classList.contains('talk')&&(!sel||p.hi)&&(p.q.length||p.pb.length));
+/* что сказать: точка Б (то, чему человек учится) чаще, чем мат из чата */
+const speak=p=>{if(p.pb.length&&(!p.q.length||Math.random()<.45))say(p,rnd(p.pb),4800,'pb');else say(p,rnd(p.q),3400)};
+const fight=()=>{const f=DATA.fights.length?rnd(DATA.fights):null;if(!f)return;
+  const ids=[...new Set(f.map(l=>l[0]))],a=P[ids[0]],b=P[ids[1]];
+  if(!a||!b||a.lock||b.lock||a.old||b.old||(sel&&!(a.hi&&b.hi)))return;
+  a.lock=b.lock=true;a.tx=Math.min(.95,Math.max(.05,b.x+(b.x>.5?-.08:.08)));a.ty=b.y;b.tx=b.x;b.ty=b.y;
+  f.forEach(([who,l],i)=>setTimeout(()=>say(P[who],l,1900,'fight'),2200+i*1800));
+  setTimeout(()=>{a.lock=b.lock=false;a.next=b.next=0},2200+f.length*1800+600)};
+const botRun=()=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
+  setTimeout(()=>say(bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot),4600),3200);setTimeout(()=>{bot.tx=1.14},8200)};
+
+/* выбор зуба */
+const info=()=>{const I=$('#info');I.textContent='';
+  if(!sel){I.innerHTML=`<b>Все участники</b> · ${act.length} сейчас, ${old.length} в прошлом. Нажмите на зуб, чтобы собрать тех, кто с ним работает.`;return}
+  const a=act.filter(p=>p.hi),o=old.filter(p=>p.hi);
+  const b=document.createElement('b');b.textContent=`${sel} · ${cap(tname(sel))}`;I.append(b,document.createElement('br'),
+    (a.length?a.map(p=>p.name).join(', '):'Сейчас с этим зубом никто не работает')+(o.length?` · в прошлом: ${o.map(p=>p.name).join(', ')}`:''))};
+const pick=f=>{sel=sel===f?null:f;
+  T.querySelectorAll('.tooth').forEach(g=>{g.classList.toggle('sel',g.dataset.f===sel);g.setAttribute('aria-pressed',g.dataset.f===sel)});
+  P.forEach(p=>{p.hi=!!sel&&p.teeth.includes(sel);p.el.classList.toggle('hi',p.hi);p.el.classList.toggle('dim',!!sel&&!p.hi&&!p.bot);if(!p.lock){p.next=0;target(p)}});info()};
+T.addEventListener('click',e=>{const g=e.target.closest('.tooth');if(g)pick(g.dataset.f)});
+T.addEventListener('keydown',e=>{const g=e.target.closest('.tooth');if(g&&(e.key=='Enter'||e.key==' ')){e.preventDefault();pick(g.dataset.f)}});
+$('#all').addEventListener('click',()=>{if(sel)pick(sel)});
+
+/* окошко человека */
+const C=$('#card'),tl=f=>`${f} (${tname(f)})`;
+const card=p=>{C.hidden=false;const T2=p.teeth;
+  const verb=p.old?(p.g=='f'?'работала':p.g=='m'?'работал':'работал(а)'):'работаю';
+  const txt=p.bot?`Привет, я ${p.name}. Приношу цитаты из разборов.`:`Привет, меня зовут ${p.name}. `+(T2.length?`Я ${verb} ${T2.length>1?`с зубами ${T2.slice(0,-1).map(tl).join(', ')} и ${tl(T2[T2.length-1])}`:`с зубом ${tl(T2[0])}`}.`:'Мой зуб пока не записан.');
+  C.innerHTML='<button class="x" type="button" aria-label="Закрыть">×</button><p style="padding-right:30px"></p>';
+  C.querySelector('p').textContent=txt;C.querySelector('.x').addEventListener('click',()=>{C.hidden=true})};
+
+const start=d=>{DATA=d;
+  P=d.people.map(x=>mk(x,false));act=P.filter(p=>!p.old);old=P.filter(p=>p.old);
+  bot=mk({n:'Бот Джузеппе',g:'u',t:[]},true);P.push(bot);
+  [...UP,...LO].forEach((f,i)=>{const s=String(f),n=act.filter(p=>p.teeth.includes(s)).length;if(!n)return;
+    const low=i>=16,X=xs[i%16]+WD[f%10]/2;$('#c'+s).innerHTML=`<circle cx="${X}" cy="${low?176:88}" r="14"/><text x="${X}" y="${low?176:88}">${n}</text>`});
+  const upd=d.updated?new Date(d.updated).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'}):null;
+  $('#cnt').textContent=d.demo?'Демо: живые данные не загрузились':`${act.length} сейчас · ${old.length} в прошлом · обновлено ${upd}`;
+  info();requestAnimationFrame(tick);
+  setInterval(()=>{const c=free();if(c.length)speak(rnd(c))},1300);
+  setTimeout(fight,2500);setInterval(fight,11000);
+  setTimeout(botRun,4000);setInterval(botRun,17000);
+  setTimeout(()=>{const c=free();for(let i=0;i<3&&c.length;i++)speak(c.splice(Math.floor(Math.random()*c.length),1)[0])},300)};
+fetch('data/live.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>d.people&&d.people.length?d:DEMO).catch(()=>DEMO).then(start);
+
+/* варианты */
+const setV=v=>{document.body.dataset.v=v;$('#vdesc').textContent=`Вариант ${v}. ${VD[v]}`;
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v))};
+const fromHash=()=>{const m=location.hash.match(/^#v([1-5])$/);setV(m?m[1]:'1')};
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){location.hash='v'+b.dataset.v}});
+addEventListener('hashchange',fromHash);fromHash();
+$('#old').addEventListener('change',e=>document.body.classList.toggle('noold',!e.target.checked));
+}
+</script>
+</body>
+</html>
