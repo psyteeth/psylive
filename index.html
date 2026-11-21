@@ -84,6 +84,19 @@ body[data-v="5"] .hd{stroke:#111;stroke-width:3.5}body[data-v="5"] .bd{stroke-wi
 .face .tear{fill:#4a86e8}.face .glass{fill:#111;stroke:none}.face .open{fill:#fff}
 .p.big svg{transform:scale(calc(var(--s,1)*1.35))}.p.big .b{bottom:calc(84px*var(--s,1)*1.35 + 12px)}
 .p.sad.big .nm{bottom:calc(84px*var(--s,1)*1.35 + 4px)}
+.p.fighter svg{transform:scale(calc(var(--s,1)*1.3))}.p.big.fighter svg{transform:scale(calc(var(--s,1)*1.55))}
+body[data-v="2"] .p.fighter svg{transform:scale(calc(var(--s,1)*1.75))}body[data-v="2"] .p.big.fighter svg{transform:scale(calc(var(--s,1)*2.05))}
+.p.sad.big.fighter .nm{bottom:calc(84px*var(--s,1)*1.55 + 4px)}body[data-v="2"] .p.sad.big.fighter .nm{bottom:calc(84px*var(--s,1)*2.05 + 4px)}
+.p.fighter{transition:opacity .4s}.p.speaking svg{filter:drop-shadow(0 0 6px var(--acc))}
+.dlg{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:min(94%,560px);max-height:46%;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;z-index:360;pointer-events:none;opacity:0;transition:opacity .4s}
+.dlg.on{opacity:1}
+.dl{max-width:80%;padding:7px 11px;border-radius:14px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);font-size:15px;line-height:1.3;animation:dlin .35s ease-out;transition:opacity .4s}
+.dl small{display:block;font-size:11px;font-weight:700;opacity:.7;margin-bottom:2px}
+.dl.l{align-self:flex-start}.dl.r{align-self:flex-end}
+.dl.pa{background:#eceef3;color:#2a2d38;border-color:#8a90a3}.dl.paa{background:#e6e3f5;color:#2a2440;border-color:#7a6fb0}
+.dl.pb{background:#ffe9a6;color:#2a1d00;border-color:#d9a400;font-weight:600}
+@keyframes dlin{from{transform:translateY(14px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.dl{animation:none}}
 .p.pa .b{background:#eceef3;color:#2a2d38;border-color:#8a90a3;border-width:3px;font-weight:700}
 .p.pa .b::after{background:#eceef3;border-color:#8a90a3}
 .p.pa .b::before{content:"точка А";display:block;font-size:11px;font-weight:700;opacity:.7;margin-bottom:2px}
@@ -307,27 +320,44 @@ const portalEl=()=>{let el=document.getElementById('portal');if(!el){el=document
 /* Коммуникация из таблицы участников: адресат говорит фразу; участник отвечает из точки А (адресат добреет,
    участник грустнеет), иногда из АА, потом из точки Б (тёмные очки; лицо адресата меняется по таблице,
    зуб вспыхивает). Если «портал = да» — в центре вырастает портал уебищности, и все шарахаются к краям. */
+/* Лента диалога над татами: реплики схватки стопкой, новая снизу выталкивает старые вверх */
+const DLG=(()=>{const el=document.createElement('div');el.className='dlg';el.setAttribute('aria-live','polite');A.append(el);return el})();
+const dlgSay=(who,name,txt,kind,side)=>{const d=document.createElement('div');d.className=`dl ${kind||''} ${side}`;
+  d.innerHTML='<small></small><span></span>';d.querySelector('small').textContent=name+(kind=='pa'?' · точка А':kind=='paa'?' · точка АА':kind=='pb'?' · точка Б':'');
+  d.querySelector('span').textContent=soft(txt);DLG.append(d);
+  while(DLG.children.length>3)DLG.firstChild.remove();
+  [...DLG.children].forEach((c,k,arr)=>c.style.opacity=k==arr.length-1?1:.45+.15*k);
+  who.el.classList.add('speaking');setTimeout(()=>who.el.classList.remove('speaking'),1600)};
+
+/* Коммуникация из таблицы участников — схватка на татами. Адресат говорит фразу; участник отвечает
+   из точки А (адресат добреет, участник грустнеет), иногда из АА, потом из точки Б (тёмные очки; лицо
+   адресата меняется по таблице, зуб вспыхивает). Пока идёт схватка, оба крупнее и кружат по центру,
+   как бойцы на ринге, а реплики стопкой поднимаются над татами. «портал = да» — портал уебищности. */
 const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));if(!list.length)return done(300);
   const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=rnd(list),p=P[i];
-  const {cx,cy}=spot(),left=Math.random()<.5,gap=Math.max(.08,40/Math.max(AW,1));
-  const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big');setFace(s,f0||'грустный');
-  s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-gap:gap);s.sp=.0002;P.push(s);
-  p.lock=true;p.tx=cx+(left?gap:-gap);p.ty=cy;setFace(p,'улыбка');
-  clear([p],cx,cy);
-  let t=3400;const at=(ms,fn)=>setTimeout(fn,ms),step=(who,txt,kind,mode)=>{const ms=readMs(txt,mode);at(t,()=>say(who,txt,ms,kind));t+=ms+600;return t};
-  step(s,said,'', 'dialog');
-  if(a){const t0=t;step(p,a,'pa','dialog');at(t0+900,()=>{setFace(p,'грустный');setFace(s,fa||'улыбка')})}
-  if(aa){const t0=t;step(p,aa,'paa','dialog');at(t0+900,()=>{setFace(p,'очень грустный');setFace(s,faa||fa||'улыбка')})}
+  const cx=.5,cy=.66,left=Math.random()<.5,R=Math.max(.09,70/Math.max(AW,1)),r=.08;
+  const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big','fighter');setFace(s,f0||'грустный');
+  s.x=left?-.06:1.06;s.y=s.ty=cy;s.tx=cx+(left?-R:R);s.sp=.00022;P.push(s);
+  p.lock=true;p.tx=cx+(left?R:-R);p.ty=cy;p.el.classList.add('fighter');setFace(p,'улыбка');const sp0=p.sp;p.sp=.00022;
+  clear([p],cx,cy);zone={l:cx-R-.16,r:cx+R+.16,t:0,b:Math.min(.98,cy+r+.18)};DLG.innerHTML='';DLG.classList.add('on');
+  // кружение: друг напротив друга по эллипсу вокруг центра татами
+  let th=left?Math.PI:0;
+  const orbit=setInterval(()=>{if(RM)return;th+=.05;p.tx=cx+R*Math.cos(th);p.ty=cy+r*Math.sin(th);s.tx=cx-R*Math.cos(th);s.ty=cy-r*Math.sin(th)},110);
+  const nameP=p.name,nameS=role||'адресат',sideS=left?'l':'r',sideP=left?'r':'l';
+  let t=3200;const at=(ms,fn)=>setTimeout(fn,ms),step=(who,name,txt,kind,side)=>{const ms=readMs(txt,'dialog');at(t,()=>dlgSay(who,name,txt,kind,side));t+=ms+500;return t};
+  step(s,nameS,said,'',sideS);
+  if(a){const t0=t;step(p,nameP,a,'pa',sideP);at(t0+700,()=>{setFace(p,'грустный');setFace(s,fa||'улыбка')})}
+  if(aa){const t0=t;step(p,nameP,aa,'paa',sideP);at(t0+700,()=>{setFace(p,'очень грустный');setFace(s,faa||fa||'улыбка')})}
   if(b){
-    if(a||aa){at(t,()=>{setFace(p,'улыбка');setFace(s,f0||'грустный')});t+=700;step(s,said,'','dialog')}
-    const t0=t;at(t0,()=>setFace(p,'',true));step(p,b,'pb','dialog');
-    at(t0+900,()=>{setFace(s,fb||'очень грустный');flashTooth(tooth)});
+    if(a||aa){at(t,()=>{setFace(p,'улыбка');setFace(s,f0||'грустный')});t+=600;step(s,nameS,said,'',sideS)}
+    const t0=t;at(t0,()=>setFace(p,'',true));step(p,nameP,b,'pb',sideP);
+    at(t0+700,()=>{setFace(s,fb||'очень грустный');flashTooth(tooth)});
     if(portal){const tp=t;at(tp,()=>{const el=portalEl();el.classList.add('on');
-        zone={l:.15,r:.85,t:0,b:.95};act.filter(o=>o!==p&&!o.lock).forEach(o=>{o.next=0;target(o)})});
-      at(tp+4200,()=>{portalEl().classList.remove('on');zone=null});t+=4600}
+        zone={l:.12,r:.88,t:0,b:.97};act.filter(o=>o!==p&&!o.lock).forEach(o=>{o.next=0;target(o)})});
+      at(tp+4200,()=>{portalEl().classList.remove('on')});t+=4600}
   }
-  at(t+600,()=>{s.tx=left?-.14:1.14;setFace(p,'');release([p])});
-  at(t+3600,()=>{s.el.remove();P.splice(P.indexOf(s),1);done(3000)})};
+  at(t+800,()=>{clearInterval(orbit);DLG.classList.remove('on');s.tx=left?-.14:1.14;setFace(p,'');p.sp=sp0;p.el.classList.remove('fighter');release([p])});
+  at(t+3800,()=>{DLG.innerHTML='';s.el.remove();P.splice(P.indexOf(s),1);done(3000)})};
 
 /* грустнолицый: «папа», «мама», «альфа-жертва»… студент говорит ему фразу точки Б; все молчат */
 const pbScene=done=>{const c=act.filter(p=>p.pb.length&&!p.lock&&(!sel||p.hi));if(!c.length)return done(300);
