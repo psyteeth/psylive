@@ -509,7 +509,7 @@ function buildLive_(inp, nowMs, salt, hash) {
   };
   stats.table_people = 0;
   if (inp.ptPeople && inp.ptPeople.length > 2) {
-    var cN = colOf(inp.ptPeople, 'ник_tg'), cZ = colOf(inp.ptPeople, 'зубы'), cS = colOf(inp.ptPeople, 'показ_на_сайте');
+    var cN = colOf(inp.ptPeople, 'ник_tg'), cZ = colOf(inp.ptPeople, 'зубы'), cS = colOf(inp.ptPeople, 'показ_на_сайте'), cP = colOf(inp.ptPeople, 'персонаж');
     inp.ptPeople.slice(2).forEach(function (r) {
       var p = byUser(r[cN]);
       if (!p) return;
@@ -517,6 +517,7 @@ function buildLive_(inp, nowMs, salt, hash) {
       var th = String(r[cZ] || '').match(/\b[1-4][1-8]\b/g);
       if (th && th.length) p.teeth = th.filter(function (x, i) { return th.indexOf(x) === i; }).slice(0, 32);
       p.show = String(r[cS] || '').trim().toLowerCase() === 'да';
+      if (cP >= 0) p.tableNick = String(r[cP] || '').trim();
     });
   }
 
@@ -560,7 +561,17 @@ function buildLive_(inp, nowMs, salt, hash) {
     var who = match(key, false);
     if (who) nickByPerson.set(who, v); else debug.reportMiss.push('ник для «' + key + '»: человек не найден');
   });
+  // ник из колонки «персонаж» таблицы участников — главнее «Прозвищ»; только из списков POOLS
   people.forEach(function (p) {
+    var want = p.tableNick;
+    if (!want || want === '—' || want === '-') return;
+    if (used[want]) { debug.reportMiss.push('ник «' + want + '» в таблице занят другим'); return; }
+    var g = ['f', 'm', 'u'].filter(function (k) { return POOLS[k].indexOf(want) >= 0; })[0];
+    if (!g) { debug.reportMiss.push('ник «' + want + '» из таблицы не из списка POOLS — взят ник из «Прозвищ»'); return; }
+    p.n = want; p.g = g; used[want] = 1;
+  });
+  people.forEach(function (p) {
+    if (p.n) return;
     var want = (p.user && nicks[p.user]) || nickByPerson.get(p);
     if (!want || used[want]) return;
     ['f', 'm', 'u'].forEach(function (g) { if (!p.n && POOLS[g].indexOf(want) >= 0) { p.n = want; p.g = g; used[want] = 1; } });
