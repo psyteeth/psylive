@@ -772,7 +772,9 @@ function buildLive_(inp, nowMs, salt, hash) {
       var p = byUser(cell(r, 'ник_tg'));
       if (!p || !p.show || !idx.has(p)) return;
       var said = txt(cell(r, 'фраза_адресата')), a = txt(cell(r, 'ответ_А')), aa = txt(cell(r, 'ответ_АА')), b = txt(cell(r, 'ответ_Б'));
-      if (!said || a === null || aa === null || b === null || (!a && !b)) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
+      if (!said || a === null || aa === null || b === null) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
+      // на сайт — только когда есть оба пути: ответ из точки А и ответ из точки Б (АА — по желанию)
+      if (!a || !b) { debug.reportMiss.push('коммуникация без ' + (!a ? 'ответа из А' : 'ответа из Б') + ', не показываем: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
       var role = cell(r, 'адресат_роль').toLowerCase().replace(/[^а-яё -]/g, '').slice(0, 30);
       var tooth = (cell(r, 'зуб').match(/\b[1-4][1-8]\b/) || [''])[0];
       // что адресат отвечает на А («молодец») и на Б («чтооо?»), и как перепалка в Б продолжается:
