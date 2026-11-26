@@ -119,9 +119,23 @@ body[data-v="1"] .hd,body[data-v="2"] .hd{fill:var(--bg);stroke:var(--c);stroke-
 @media(prefers-reduced-motion:reduce){.portal{transition:opacity .3s}.tooth.flash path{animation:none;fill:#e8432f}}
 .p.pa .b,.p.paa .b,.p.pb .b{max-width:240px}
 /* история с триггером */
-.p.fighter svg{transition:transform .8s}@media(max-width:600px){.p.fighter .b{max-width:44vw!important}}.p.fighter.small svg{transform:scale(calc(var(--s,1)*.85))!important}
+.p.fighter svg{transition:transform .8s}
+/* бабл над увеличенным человечком: поднимаем на его рост, чтобы не закрывал лицо */
+.p.fighter .b{bottom:calc(84px*var(--s,1)*1.3 + 12px);transition:bottom .8s}.p.big.fighter .b{bottom:calc(84px*var(--s,1)*1.55 + 12px)}.p.fighter.small .b{bottom:calc(84px*var(--s,1)*.85 + 12px)}@media(max-width:600px){.p.fighter .b{max-width:44vw!important}}.p.fighter.small svg{transform:scale(calc(var(--s,1)*.85))!important}
 .scene-on .p:not(.cast):not(.old){opacity:.22;transition:opacity .8s}.p{transition:opacity .8s}
-.p.kick svg{transition:transform .8s,rotate .25s,translate .25s}.p.kick.kl svg{rotate:-90deg}.p.kick.kr svg{rotate:90deg}.p.kick .nm{display:none!important}
+.p.kick .nm{display:none!important}
+/* страница человека: он один и крупно, его зубы выделены, остальные приглушены */
+body.focus .p:not(.hero):not(.sad){display:none}
+.p.hero:not(.fighter) svg{transform:scale(calc(var(--s,1)*1.7))}.p.hero:not(.fighter) .nm{display:block;top:auto;bottom:-22px}
+body.focus .tooth.off{opacity:.28;cursor:default}body.focus .tooth.mine path{fill:var(--accs)}body.focus .tooth.mine.sel path{fill:var(--acc)}body.focus .cnt{display:none}
+body.focus .info{display:none}
+.pl{padding:10px 14px 12px;border-top:2px dashed var(--fig);border-bottom:2px dashed var(--fig);display:grid;gap:6px;align-content:start}
+@media(min-width:900px){body.focus .stage{display:grid;grid-template-columns:minmax(280px,360px) 1fr}body.focus .tw{grid-column:1/-1}body.focus .pl{border-bottom:0;border-right:2px dashed var(--fig)}}
+.pl .plh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.pl .hello{margin:0;font-size:15px}
+.pl .back,.pl .more{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 14px Inter,system-ui,sans-serif;cursor:pointer;justify-self:start}
+.pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
+.pl ol{margin:0;padding-left:28px;display:grid;gap:2px}.pl li button{min-height:36px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:500 16px Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
+.pl li button:hover{background:var(--accs)}.pl li.on button{background:var(--acc);color:var(--acct);font-weight:700}
 .p.hit svg{animation:hit .12s linear 6}@keyframes hit{25%{translate:-5px 0}75%{translate:5px 0}}
 .p .hd{transition:fill 1.6s}
 .toy{position:absolute;left:0;top:0;font-size:22px;z-index:340;pointer-events:none;transition:transform .9s cubic-bezier(.3,1.5,.6,1),opacity .6s}
@@ -160,6 +174,7 @@ body[data-v="1"] .b,body[data-v="2"] .b{border-radius:22px 16px 20px 14px}
   <p class="info" id="info" aria-live="polite"></p>
   <div class="stage">
     <div class="tw" id="tw"><button class="tzoom" id="tzoom" type="button" aria-pressed="false">⤢ крупнее</button><svg class="teeth" id="teeth" role="group" aria-label="Зубная формула, 32 зуба"></svg><svg class="teeth teethM" id="teethM" role="group" aria-label="Зубная формула, 32 зуба"></svg></div>
+    <section class="pl" id="pl" hidden aria-live="polite"><div class="plh"><button class="back" type="button">← все участники</button><p class="hello"></p></div><h3></h3><p class="empty">Сцен пока нет. Они появятся после созвонов.</p><ol></ol><button class="more" type="button" hidden></button></section>
     <div class="arena" id="arena"><div class="card" id="card" hidden></div></div>
   </div>
   <p class="note" id="vdesc"></p>
@@ -443,17 +458,25 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
         at(t,()=>{setFace(s,face);if(/крас|багр/i.test(x))hd.style.fill='#f3a29a';if(/кулак|маш|топа/i.test(x)&&!shock){s.el.classList.add('hit');setTimeout(()=>s.el.classList.remove('hit'),800)}});
         if(isAct(x))wait(3400);else line(s,x,'');
       }else if(/(?<![а-яё])ки-?я(?![а-яё])|по яйц|между ног/i.test(x)){ // 6. КИ-Я! игрушки убраны, видно сам удар
-        // летит горизонтально, ногами вперёд: ступни ровно в пах триггеру, надпись над его головой
-        at(t,()=>{still();toys.forEach(e=>e.style.opacity=0);p.el.classList.add('kick',side=='l'?'kl':'kr');
-          p.sp=.0016;p.tx=s.x+(side=='l'?-1:1)*Math.max(.07,60/Math.max(AW,1));p.ty=s.y});
-        at(t+1000,()=>{const g=p.el.querySelector('svg'),ps=g.getBoundingClientRect(),ss=s.el.querySelector('svg').getBoundingClientRect();
-          const footX=side=='l'?ps.right:ps.left,dx=ss.left+ss.width/2-footX+(side=='l'?-3:3),dy=ss.top+ss.height*.74-(ps.top+ps.height/2);
-          g.style.translate=`${dx.toFixed(1)}px ${dy.toFixed(1)}px`;
-          const ar=A.getBoundingClientRect(),el=document.createElement('div');el.className='boom';el.textContent='КИ-Я!';
+        // прыжок: встаёт на разбег, подпрыгивает и зависает в воздухе, потом под 45° летит ногами вниз
+        // в пах триггеру («КИ-Я!» над его головой) и встаёт. Поворот — вокруг ступней (transform-origin внизу)
+        let F0,G0,dX,dY;const g=p.el.querySelector('svg'),ss_=()=>s.el.querySelector('svg').getBoundingClientRect();
+        at(t,()=>{still();toys.forEach(e=>e.style.opacity=0);p.el.classList.add('kick');
+          p.sp=.0012;p.tx=s.x+(side=='l'?-1:1)*Math.max(.14,130/Math.max(AW,1));p.ty=s.y});
+        at(t+1500,()=>{const ps=g.getBoundingClientRect(),ss=ss_(),H=ss.height*1.05;
+          F0=[ps.left+ps.width/2,ps.top+ps.height*77/84];G0=[ss.left+ss.width/2+(side=='l'?-4:4),ss.top+ss.height*.76];
+          g.style.transition='translate .38s cubic-bezier(.2,.7,.3,1),rotate .38s';g.style.translate=`0px ${(-H).toFixed(1)}px`;g.style.rotate=(side=='l'?12:-12)+'deg'});
+        at(t+2350,()=>{dX=G0[0]-F0[0];dY=G0[1]-F0[1]; // из зависания — вниз под 45° ногами вперёд
+          g.style.transition='translate .3s cubic-bezier(.5,0,.9,.6),rotate .18s';g.style.rotate=(side=='l'?-45:45)+'deg';g.style.translate=`${dX.toFixed(1)}px ${dY.toFixed(1)}px`});
+        at(t+2650,()=>{const ss=ss_(),ar=A.getBoundingClientRect(),el=document.createElement('div');el.className='boom';el.textContent='КИ-Я!';
           el.style.left=(ss.left+ss.width/2-ar.left)+'px';el.style.top=(ss.top-ar.top-78)+'px';A.append(el);toys.push(el);requestAnimationFrame(()=>el.classList.add('on'));
           setFace(s,'шок');hd.style.fill='';s.el.classList.add('hit');setTimeout(()=>{s.el.classList.remove('hit');el.classList.remove('on')},1800)});
-        at(t+2400,()=>{const g=p.el.querySelector('svg');g.style.translate='';p.el.classList.remove('kick','kl','kr');p.sp=.0008;runSide(p,s,side,false)}); // приземлился и отскочил
-        wait(4200);
+        at(t+3700,()=>{ // встаёт: переносим человечка туда, где он приземлился, и выпрямляем
+          const off=side=='l'?-42:42;g.style.transition='none';p.x+=(dX+off)/Math.max(AW,1);p.tx=p.x;place(p);
+          g.style.translate=`${-off}px ${dY.toFixed(1)}px`;void g.getBoundingClientRect();
+          g.style.transition='translate .45s cubic-bezier(.4,0,.6,1),rotate .45s';g.style.translate='0px 0px';g.style.rotate='0deg'});
+        at(t+4500,()=>{g.style.transition='';g.style.translate='';g.style.rotate='';p.el.classList.remove('kick');p.sp=.0008;runSide(p,s,side,false)}); // отскочил на свою половину
+        wait(5400);
       }else if(/побед/i.test(x)){ // 7. ПОБЕДА! носится по своей половине
         at(t,()=>{setFace(p,'восторг');roam(false)});at(t+700,()=>say(p,'ПОБЕДА!',6000,'brag'));wait(7000);
       }else if(isAct(x)){at(t,()=>roam(false));wait(3400)}
@@ -463,9 +486,15 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
   if(portal){const tp=t;at(tp,()=>{portalEl().classList.add('on');
       zone={l:.12,r:.88,t:0,b:.97};act.filter(o=>o!==p&&!o.lock).forEach(o=>{o.next=0;target(o)})});
     at(tp+4200,()=>portalEl().classList.remove('on'));t+=4600}
-  at(t+400,()=>{A.classList.remove('scene-on');p.el.classList.remove('cast');still();clearInterval(blink);p.sp=sp0;p.side=null;p.el.classList.remove('fighter','small');setFace(p,'');
-    act.forEach(o=>{if(!o.lock)setFace(o,'')});toys.forEach(e=>e.style.opacity=0);s.tx=side=='l'?1.14:-.14;release([p])});
-  at(t+3600,()=>{toys.forEach(e=>e.remove());s.el.remove();P.splice(P.indexOf(s),1);done(3000)})};
+  const wrap=()=>{A.classList.remove('scene-on');p.el.classList.remove('cast','kick','talk');still();clearInterval(blink);p.sp=sp0;p.side=null;p.el.classList.remove('fighter','small');setFace(p,'');
+    const g=p.el.querySelector('svg');g.style.transition=g.style.translate=g.style.rotate='';
+    act.forEach(o=>{if(!o.lock)setFace(o,'')});toys.forEach(e=>e.style.opacity=0);s.tx=side=='l'?1.14:-.14;release([p])};
+  const fin=()=>{curScene=null;toys.forEach(e=>e.remove());s.el.remove();if(P.includes(s))P.splice(P.indexOf(s),1)};
+  at(t+400,wrap);
+  at(t+3600,()=>{fin();done(3000)});
+  // прервать сценку сразу (клик по другому персонажу, выход со страницы человека)
+  curScene={p,stop:()=>{timers.forEach(clearTimeout);portalEl().classList.remove('on');wrap();fin();zone=null;scene=false}}};
+let curScene=null;
 
 const commScene=done=>{const list=(DATA.comm||[]).filter(c=>P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));if(!list.length)return done(300);
   const C=rnd(list),[i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=C,p=P[i];
@@ -552,18 +581,45 @@ const botScene=done=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
    (первая — Серегина). Новые сценки и фразы добавляются по созвонам. */
 const isStory=c=>(c[14]||[]).length&&c[8];
 const storiesOf=p=>(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]===p);
-/* клик по персонажу: его истории идут следующими, одна за другой (текущая сценка доигрывает) */
-let want=null,dirT=0;
+/* Страница человека (клик по человечку): на листе он один и крупно, сверху его зубы,
+   ниже плейлист «Сцены из жизни по N зубу». Сцена из плейлиста играет тут же, дальше — следующая по списку. */
+let dirT=0,focus=null,fT=null,queue=[],plOpen=false;
 const kick=ms=>{clearTimeout(dirT);dirT=setTimeout(director,ms)};
-const tap=p=>{const L=storiesOf(p);if(!L.length)return card(p);
-  C.hidden=true;want={p,left:L.slice().sort(()=>Math.random()-.5)};if(!scene)kick(0)};
-const director=()=>{if(scene)return kick(2000);
-  let C0=null;
-  if(want){while(want.left.length&&!C0){const c=want.left.shift();if(!P[c[0]].lock)C0=c}if(!want.left.length)want=null}
-  if(!C0){const list=(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));
-    if(!list.length)return kick(4000);C0=rnd(list)}
+const PL=$('#pl');
+const teethOf=p=>[...new Set([...p.teeth,...storiesOf(p).map(c=>c[11]).filter(Boolean)])].sort();
+const sceneTitle=c=>{const r=cap(c[1]||'адресат');return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
+const plList=()=>storiesOf(focus).filter(c=>!fT||c[11]===fT);
+const plRender=()=>{const L=plList(),shown=plOpen?L:L.slice(0,10);
+  PL.querySelector('.hello').textContent=greet(focus);
+  PL.querySelector('h3').textContent=fT?`Сцены из жизни по ${fT} зубу`:'Сцены из жизни';
+  const ol=PL.querySelector('ol');ol.innerHTML='';
+  shown.forEach((c,k)=>{const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.textContent=sceneTitle(c);
+    b.addEventListener('click',()=>playFrom(L.indexOf(c)));if(curScene&&curScene.c===c)li.className='on';li.append(b);ol.append(li)});
+  PL.querySelector('.empty').hidden=!!L.length;
+  const more=PL.querySelector('.more');more.hidden=L.length<=10;more.textContent=plOpen?'▴ свернуть':`▾ ещё ${L.length-10}`};
+const markTeeth=()=>{const mine=focus?new Set(teethOf(focus)):null;
+  document.querySelectorAll('.tooth').forEach(g=>{const f=g.dataset.f;g.classList.toggle('mine',!!mine&&mine.has(f));g.classList.toggle('off',!!mine&&!mine.has(f));
+    g.classList.toggle('sel',focus?f===fT:f===sel)})};
+const playNext=()=>{if(!focus||!queue.length)return plRender();const c=queue.shift();
+  if(curScene)curScene.stop();scene=true;storyScene(c,()=>{scene=false;if(focus)setTimeout(playNext,1500)});curScene.c=c;plRender()};
+const playFrom=k=>{queue=plList().slice(k);playNext();if(innerWidth<900)A.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'})}; // на телефоне список над листом: прокручиваем к сцене
+const enterFocus=p=>{if(curScene)curScene.stop();scene=false;clearTimeout(dirT);queue=[];
+  if(focus)focus.el.classList.remove('hero');
+  if(sel)pick(sel);focus=p;fT=null;plOpen=false;C.hidden=true;
+  document.body.classList.add('focus');p.el.classList.add('hero');p.lock=false;p.next=0;
+  PL.hidden=false;markTeeth();plRender();$('.stage').scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})};
+const exitFocus=()=>{if(!focus)return;if(curScene)curScene.stop();scene=false;queue=[];
+  focus.el.classList.remove('hero');focus=null;fT=null;document.body.classList.remove('focus');PL.hidden=true;markTeeth();
+  act.forEach(o=>{if(!o.lock){o.next=0;target(o)}});kick(2500)};
+const tap=p=>{if(p.sad||p.bot)return;if(focus===p)return;enterFocus(p)};
+PL.querySelector('.back').addEventListener('click',exitFocus);
+PL.querySelector('.more').addEventListener('click',()=>{plOpen=!plOpen;plRender()});
+addEventListener('keydown',e=>{if(e.key=='Escape')exitFocus()});
+const director=()=>{if(scene||focus)return kick(2000); // на странице человека сцены идут только из его плейлиста
+  const list=(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));
+  if(!list.length)return kick(4000);
   scene=true;
-  storyScene(C0,pause=>{scene=false;kick(want?1500:pause+4000+Math.random()*4000)})};
+  storyScene(rnd(list),pause=>{scene=false;kick(pause+4000+Math.random()*4000)})};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
@@ -575,15 +631,17 @@ const pick=f=>{sel=sel===f?null:f;
   document.querySelectorAll('.tooth').forEach(g=>{g.classList.toggle('sel',g.dataset.f===sel);g.setAttribute('aria-pressed',g.dataset.f===sel)});
   P.forEach(p=>{p.hi=!!sel&&!p.old&&p.teeth.includes(sel);p.el.classList.toggle('hi',p.hi);p.el.classList.toggle('dim',!!sel&&!p.hi&&!p.bot);if(!p.lock){p.next=0;target(p)}});info()};
 $('#tzoom').addEventListener('click',e=>{const on=$('#tw').classList.toggle('tbig');e.currentTarget.textContent=on?'⤡ мельче':'⤢ крупнее';if(on)$('#tw').scrollLeft=($('#tw').scrollWidth-$('#tw').clientWidth)/2;e.currentTarget.setAttribute('aria-pressed',on)});
-[T,TM].forEach(svg=>{svg.addEventListener('click',e=>{const g=e.target.closest('.tooth');if(g)pick(g.dataset.f)});
-  svg.addEventListener('keydown',e=>{const g=e.target.closest('.tooth');if(g&&(e.key=='Enter'||e.key==' ')){e.preventDefault();pick(g.dataset.f)}})});
+/* на странице человека зуб выбирает сцены из его жизни; иначе собирает всех, кто с ним работает */
+const toothTap=f=>{if(!focus)return pick(f);if(!teethOf(focus).includes(f))return;fT=fT===f?null:f;plOpen=false;markTeeth();plRender()};
+[T,TM].forEach(svg=>{svg.addEventListener('click',e=>{const g=e.target.closest('.tooth');if(g)toothTap(g.dataset.f)});
+  svg.addEventListener('keydown',e=>{const g=e.target.closest('.tooth');if(g&&(e.key=='Enter'||e.key==' ')){e.preventDefault();toothTap(g.dataset.f)}})});
 $('#all').addEventListener('click',()=>{if(sel)pick(sel)});
 
 /* окошко человека */
 const C=$('#card'),tl=f=>`${f} (${tname(f)})`;
-const card=p=>{if(p.sad)return;C.hidden=false;const T2=p.teeth;
-  const verb=p.old?(p.g=='f'?'работала':p.g=='m'?'работал':'работал(а)'):'работаю';
-  const txt=p.bot?`Привет, я ${p.name}. Приношу цитаты из разборов.`:`Привет, меня зовут ${p.name}. `+(T2.length?`Я ${verb} ${T2.length>1?`с зубами ${T2.slice(0,-1).map(tl).join(', ')} и ${tl(T2[T2.length-1])}`:`с зубом ${tl(T2[0])}`}.`:'Мой зуб пока не записан.');
+const greet=p=>{const T2=p.teeth,verb=p.old?(p.g=='f'?'работала':p.g=='m'?'работал':'работал(а)'):'работаю';
+  return p.bot?`Привет, я ${p.name}. Приношу цитаты из разборов.`:`Привет, меня зовут ${p.name}. `+(T2.length?`Я ${verb} ${T2.length>1?`с зубами ${T2.slice(0,-1).map(tl).join(', ')} и ${tl(T2[T2.length-1])}`:`с зубом ${tl(T2[0])}`}.`:'Мой зуб пока не записан.')};
+const card=p=>{if(p.sad)return;C.hidden=false;const txt=greet(p);
   C.innerHTML='<button class="x" type="button" aria-label="Закрыть">×</button><p style="padding-right:30px"></p>';
   C.querySelector('p').textContent=txt;C.querySelector('.x').addEventListener('click',()=>{C.hidden=true})};
 
