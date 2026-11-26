@@ -229,7 +229,7 @@ const mk=(d,kind)=>{const bot=kind===true,sad=kind=='sad';
   if(bot){el.className+=' botem';el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><text x="20" y="58" text-anchor="middle" style="font-size:46px">🤖</text></svg><span class="nm"></span>`}
   else el.innerHTML=`<div class="b"></div><svg viewBox="0 0 40 84" aria-hidden="true"><ellipse class="sh" cx="20" cy="79" rx="15" ry="3"/><circle class="hd" cx="20" cy="14" r="12"/><rect class="hs" x="8" y="2" width="24" height="24"/>${bot?'<text class="em" x="20" y="15">🤖</text>':''}<g class="face"></g><path class="bd" d="M20 26V77M9 50H31M7 77H33"/></svg><span class="nm"></span>`;
   el.querySelector('.nm').textContent=p.name;
-  if(!old){el.addEventListener('click',()=>card(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();card(p)}})}
+  if(!old){el.addEventListener('click',()=>tap(p));el.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();tap(p)}})}
   p.el=el;p.b=el.querySelector('.b');A.append(el);if(!bot)setFace(p,'база');return p};
 
 let P=[],act=[],old=[],bot=null,DATA=DEMO,sel=null;
@@ -547,14 +547,23 @@ const botScene=done=>{bot.y=bot.ty=.55+Math.random()*.35;bot.x=1.12;bot.tx=.8;
   const end=play([[bot,rnd(DATA.bot.length?DATA.bot:DEMO.bot)]],3200); // демо-фразы только в демо-режиме
   setTimeout(()=>{bot.tx=1.14},end+300);setTimeout(()=>done(2500),end+1200)};
 
-const director=()=>{if(scene)return setTimeout(director,2000);
-  // С чистого листа (27.11): все прежние баблы убраны — монологи и фразы из чата, понты, точки Б из чата,
-  // реплики толпы, бот, коммуникации без продолжения. Играют только истории с триггером из таблицы
-  // (первая — Серегина). Новые сценки и фразы добавляются по созвонам.
-  const list=(DATA.comm||[]).filter(c=>(c[14]||[]).length&&c[8]&&P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));
-  if(!list.length)return setTimeout(director,4000);
+/* С чистого листа (27.11): все прежние баблы убраны — монологи и фразы из чата, понты, точки Б из чата,
+   реплики толпы, бот, коммуникации без продолжения. Играют только истории с триггером из таблицы
+   (первая — Серегина). Новые сценки и фразы добавляются по созвонам. */
+const isStory=c=>(c[14]||[]).length&&c[8];
+const storiesOf=p=>(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]===p);
+/* клик по персонажу: его истории идут следующими, одна за другой (текущая сценка доигрывает) */
+let want=null,dirT=0;
+const kick=ms=>{clearTimeout(dirT);dirT=setTimeout(director,ms)};
+const tap=p=>{const L=storiesOf(p);if(!L.length)return card(p);
+  C.hidden=true;want={p,left:L.slice().sort(()=>Math.random()-.5)};if(!scene)kick(0)};
+const director=()=>{if(scene)return kick(2000);
+  let C0=null;
+  if(want){while(want.left.length&&!C0){const c=want.left.shift();if(!P[c[0]].lock)C0=c}if(!want.left.length)want=null}
+  if(!C0){const list=(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));
+    if(!list.length)return kick(4000);C0=rnd(list)}
   scene=true;
-  storyScene(rnd(list),pause=>{scene=false;setTimeout(director,pause+4000+Math.random()*4000)})};
+  storyScene(C0,pause=>{scene=false;kick(want?1500:pause+4000+Math.random()*4000)})};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
@@ -586,7 +595,7 @@ const start=d=>{DATA=d;
   const upd=d.updated?new Date(d.updated).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'}):null;
   $('#cnt').textContent=d.demo?'Демо: живые данные не загрузились':`Активных участников: ${act.length}`;
   info();requestAnimationFrame(tick);
-  setTimeout(director,1200);
+  kick(1200);
 };
 fetch('data/live.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>d.people&&d.people.length?d:DEMO).catch(()=>DEMO).then(start);
 
