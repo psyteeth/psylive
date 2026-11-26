@@ -136,7 +136,7 @@ body.focus .info{display:none}
 .pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
 .pl ol{margin:0;padding-left:28px;display:grid;gap:2px}.pl li button{min-height:36px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:500 16px Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
 .pl li button:hover{background:var(--accs)}.pl li.on button{background:var(--acc);color:var(--acct);font-weight:700}
-.p.hit svg{animation:hit .12s linear 6}@keyframes hit{25%{translate:-5px 0}75%{translate:5px 0}}
+.p.hit svg{animation:hit .12s linear 6}.p.hit.rage svg{animation:hit .1s linear 24}@keyframes hit{25%{translate:-5px 0}75%{translate:5px 0}}
 .p .hd{transition:fill 1.6s}
 .toy{position:absolute;left:0;top:0;font-size:22px;z-index:340;pointer-events:none;transition:transform .9s cubic-bezier(.3,1.5,.6,1),opacity .6s}
 .boom{position:absolute;left:0;top:0;font:900 44px/1 Inter,system-ui,sans-serif;color:#e8432f;-webkit-text-stroke:2px #1d1d1d;z-index:380;pointer-events:none;transform:translate(-50%,-50%) scale(.2);opacity:0;transition:transform .35s cubic-bezier(.2,1.8,.4,1),opacity .3s}
@@ -454,8 +454,12 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
     let rage=0;const ESC=['очень злой','бешеный','бешеный']; // после точки Б он уже злой: дальше только злее
     chain.forEach((x,k)=>{
       if(k%2==0){ // триггер: действие играет лицом, реплика — баблом
-        const shock=/шок|больно|ошара|ступор/i.test(x),face=shock?'шок':ESC[Math.min(rage++,2)];
-        at(t,()=>{setFace(s,face);if(/крас|багр/i.test(x))hd.style.fill='#f3a29a';if(/кулак|маш|топа/i.test(x)&&!shock){s.el.classList.add('hit');setTimeout(()=>s.el.classList.remove('hit'),800)}});
+        const shock=/шок|больно|ошара|ступор/i.test(x),hurt=/обиж|обид|плач|слёз|слез/i.test(x)&&!/ярост|злит|бесит/i.test(x),
+          face=shock?'шок':hurt?'очень грустный':ESC[Math.min(rage++,2)],rip=/разрыва|на куски|рвёт|порвал/i.test(x);
+        at(t,()=>{setFace(s,face);if(/крас|багр/i.test(x))hd.style.fill='#f3a29a';
+          if(/кулак|маш|топа/i.test(x)&&!shock){s.el.classList.add('hit');setTimeout(()=>s.el.classList.remove('hit'),800)}
+          if(rip){s.el.classList.add('hit','rage');setFace(p,'шок');setTimeout(()=>s.el.classList.remove('hit','rage'),2400)} // в ярости рвёт на куски
+          if(/уход|уходит|ушл|ушёл|уш[её]л/i.test(x)){s.tx=side=='l'?Math.min(.9,s.x+.22):Math.max(.1,s.x-.22);s.sp=.00008}});  // уходит — участник бежит следом
         if(isAct(x))wait(3400);else line(s,x,'');
       }else if(/(?<![а-яё])ки-?я(?![а-яё])|по яйц|между ног/i.test(x)){ // 6. КИ-Я! игрушки убраны, видно сам удар
         // прыжок: встаёт на разбег, подпрыгивает и зависает в воздухе, потом под 45° летит ногами вниз
@@ -479,7 +483,7 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
         wait(5400);
       }else if(/побед/i.test(x)){ // 7. ПОБЕДА! носится по своей половине
         at(t,()=>{setFace(p,'восторг');roam(false)});at(t+700,()=>say(p,'ПОБЕДА!',6000,'brag'));wait(7000);
-      }else if(isAct(x)){at(t,()=>roam(false));wait(3400)}
+      }else if(isAct(x)){at(t,()=>{roam(false);if(/весел|радует|смеёт|смеет|танцу|ржёт/i.test(x))setFace(p,'восторг')});wait(3400)}
       else line(p,x,'pb');
     });
   }
