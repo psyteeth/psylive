@@ -143,6 +143,20 @@ body.focus .info{display:none}
 .boom.on{transform:translate(-50%,-50%) scale(1) rotate(-8deg);opacity:1}
 @media(prefers-reduced-motion:reduce){.p.hit svg{animation:none}.toy,.boom{transition:opacity .3s}}
 .react .b{font-size:12px;padding:4px 8px;opacity:.92}
+/* сообщения диалога: обычные баблы с хвостиком к говорящему, столбиком над ним */
+.tb{position:absolute;left:0;top:0;width:max-content;max-width:min(220px,44vw);padding:7px 11px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:16px;font-size:14px;line-height:1.25;z-index:360;pointer-events:none;opacity:0;transform:translateY(8px) scale(.96);transition:opacity .3s,transform .3s,top .35s,left .35s}
+body[data-v="1"] .tb,body[data-v="2"] .tb{border-radius:22px 16px 20px 14px}
+.tb.on{opacity:1;transform:none}
+.wedges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:359;transition:opacity .4s}
+.wedges path{fill:var(--bub);stroke:var(--bubl);stroke-width:2;stroke-linejoin:round;opacity:0;transition:opacity .3s,d .35s}.wedges path.on{opacity:1} /* бабл с хвостом к голове говорящего — одним контуром */
+.tb{background:transparent!important;border-color:transparent!important;transition:opacity .3s!important;transform:none!important} /* без переезда: текст и контур двигаются вместе */ /* сам контур рисует svg, текст поверх */
+.p.rxon{z-index:390!important} /* реакция — поверх баблов */
+.p.named .nm{display:block}
+@media(prefers-reduced-motion:reduce){.tb{transition:opacity .3s}.tb .rx{animation:none}}
+.p.emo .b{left:calc(50% + 14px);bottom:calc(84px*var(--s,1)*.62);transform:none!important}.p.emo .b::after{display:none} /* реакция — у головы, а не над ней */
+.p.rxon{opacity:1!important}
+.p.emo.eml .b{left:auto;right:calc(50% + 14px)}.p.emo.emt .b{left:50%;bottom:calc(84px*var(--s,1) + 8px);transform:translateX(-50%)!important}
+.emo .b{font-size:26px;line-height:1;padding:6px 9px;border-radius:999px} /* реакция эмодзи, как в телеграме */
 .brag .b{border-width:3px;font-weight:700}
 .botem svg{overflow:visible}
 .p.pb .b{background:#ffe9a6;color:#2a1d00;border-color:#d9a400;border-width:3px;font-weight:700}
@@ -250,6 +264,11 @@ const mk=(d,kind)=>{const bot=kind===true,sad=kind=='sad';
 let P=[],act=[],old=[],bot=null,DATA=DEMO,sel=null;
 /* зона сценки (доли ширины и высоты): пока идёт сценка, туда никто не заходит */
 let zone=null;
+/* места, куда гуляющим нельзя: баблы диалога и участники разговора (прямоугольники в пикселях площадки) */
+let AVOID=[];
+const figBox=(x,y)=>{const sc=(.5+.55*y)*(AW<520?.8:1),fy=104+y*(AH-118);return {l:x*AW-22,r:x*AW+22,t:fy-84*sc-6,b:fy+4}};
+const hits=(a,b)=>a.l<b.r&&b.l<a.r&&a.t<b.b&&b.t<a.b;
+const inAvoid=(x,y)=>{if(!AVOID.length)return false;const f=figBox(x,y);return AVOID.some(r=>hits(f,r))};
 const candidate=p=>{
   let x=.04+Math.random()*.92,y=sel?(p.hi?.72+Math.random()*.26:.22+Math.random()*.3):.25+Math.random()*.72;
   if(zone){ // остаёмся со своей стороны зоны, чтобы не идти сквозь неё
@@ -261,10 +280,11 @@ const candidate=p=>{
   return {x,y}};
 /* человечки выбирают место подальше от других, чтобы не толпиться */
 const target=p=>{if(p.lock)return;let best=null,bd=-1;
-  for(let k=0;k<7;k++){const c=candidate(p);let d=1e9;
+  for(let k=0;k<(AVOID.length?20:7);k++){const c=candidate(p);if(inAvoid(c.x,c.y)||AVOID.length&&[.2,.4,.6,.8].some(f=>inAvoid(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f)))continue;let d=1e9; // ни точка, ни путь к ней — не за баблом
     if(chase&&p!==chase.p&&!p.old)d=Math.hypot((chase.p.x-c.x)*AW,(chase.p.y-c.y)*AH); // убегаем от того, кто выебнулся
     else for(const o of P){if(o===p||o.old||o.bot||o.sad)continue;d=Math.min(d,Math.hypot((o.tx-c.x)*AW,(o.ty-c.y)*AH*.7),Math.hypot((o.x-c.x)*AW,(o.y-c.y)*AH*.7))}
     if(d>bd){bd=d;best=c}}
+  if(!best)best=candidate(p);
   p.tx=best.x;p.ty=best.y};
 const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
   const fy=104+p.y*(AH-118),bob=p.moving&&!RM?Math.abs(Math.sin(p.walk/110))*3:0;
@@ -278,13 +298,13 @@ const tick=t=>{const dt=Math.min(50,t-last);last=t;
       p.x=p.tx=o.cx+o.R*Math.cos(th);p.y=p.ty=o.cy+o.r*Math.sin(th);p.moving=false;place(p);continue}
     const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
     if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
-    else if(d>.004){const v=Math.min(p.sp*dt*(!p.lock&&zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
+    else if(d>.004){const v=Math.min(p.sp*dt*(!p.lock&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b||inAvoid(p.x,p.y))?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
     else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+800+Math.random()*3800;else if(t>p.next){p.next=0;target(p)}}}
     place(p)}
   requestAnimationFrame(tick)};
 
-const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','pa','paa','react','brag'].forEach(k=>p.el.classList.toggle(k,kind==k));
-  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','pa','paa','react','brag'),ms)};
+const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','pa','paa','react','brag','emo'].forEach(k=>p.el.classList.toggle(k,kind==k));
+  clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','pa','paa','react','brag','emo'),ms)};
 /* сколько держать бабл: никуда не торопимся.
    Одиночная фраза (монолог, точка Б, бот) висит ~10 секунд, реплика в диалоге ~5 секунд; длинные чуть дольше. */
 const readMs=(t,mode)=>{const n=String(t).length;
@@ -619,11 +639,118 @@ const tap=p=>{if(p.sad||p.bot)return;if(focus===p)return;enterFocus(p)};
 PL.querySelector('.back').addEventListener('click',exitFocus);
 PL.querySelector('.more').addEventListener('click',()=>{plOpen=!plOpen;plRender()});
 addEventListener('keydown',e=>{if(e.key=='Escape')exitFocus()});
+/* Обычные реплики (data/talk.json): фразы, которые владелец выбрал по скринам чата.
+   Человечек говорит фразу, через секунду другой отвечает реакцией (💯, 😂…), обе висят. */
+let TALK=[];
+fetch('data/talk.json',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(t=>{TALK=Array.isArray(t)?t:[]}).catch(()=>{});
+const byNick=n=>act.find(p=>p.name===n);
+/* Реплика или целый диалог из переписки: {who,say,react} или {order:[…], lines:[{who,say,to,react},…]}.
+   Раскладка по рисунку владельца: участники стоят просторно (трое — треугольником: order[0] слева вверху,
+   order[1] снизу, order[2] справа вверху) и подходят, когда им пора говорить. Бабл висит между тем, кто
+   говорит, и тем, кому он отвечает («to»), хвостиком к говорящему; переписка каждой пары идёт в своём
+   коридоре, новый бабл — под предыдущим. Реакции — эмодзи у головы реагирующего (и гуляющих вокруг). */
+const talkLines=T0=>(T0.lines||[T0]).map(l=>({p:byNick(l.who),say:l.say,to:l.to,R:(l.react||[]).map(r=>({p:byNick(r.who),e:r.emoji})).filter(r=>r.p)}));
+const SPOTS={1:[[.5,.7]],2:[[.28,.66],[.72,.66]],3:[[.2,.5],[.5,.93],[.8,.5]],4:[[.2,.5],[.35,.93],[.65,.93],[.8,.5]]};
+const talkScene=(T0,done)=>{const L=talkLines(T0);
+  if(!L.length||L.some(l=>!l.p||!l.say))return done(300);
+  const who=new Set();L.forEach(l=>who.add(l.p)); // в кругу — только те, кто говорит; реагируют и гуляющие вокруг
+  let cast=(T0.order||[]).map(byNick).filter(o=>o&&who.has(o));
+  [...who].forEach(o=>{if(!cast.includes(o))cast.push(o)});cast=cast.slice(0,4);
+  if(cast.some(o=>o.lock))return done(300);
+  const n=cast.length,timers=[],home=new Map(),sp0=new Map(),inScene=new Set();
+  cast.forEach((o,k)=>{home.set(o,SPOTS[n][k]);sp0.set(o,o.sp)}); // участники гуляют, пока их не позовут говорить
+  zone=null; // остальные просто бледнеют и гуляют на заднем плане
+  A.classList.add('scene-on');
+  const els=[],live=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms));
+  // хвост-клин от бабла к голове говорящего: видно, кто говорит, даже если бабл сдвинут
+  const WD=document.createElementNS('http://www.w3.org/2000/svg','svg');WD.setAttribute('class','wedges');A.append(WD);
+  // бабл и хвост — один контур: скруглённый прямоугольник, в стороне к говорящему — клин до его головы
+  const wedge=(b,x,y,w,h)=>{const o=b._sp;if(!o)return;const r=o.el.querySelector('svg').getBoundingClientRect(),ar=A.getBoundingClientRect();
+    const hx=r.left-ar.left+r.width/2,hy=r.top-ar.top+r.height*.15,R=16,hw=10;
+    const cx=Math.max(x,Math.min(x+w,hx)),cy=Math.max(y,Math.min(y+h,hy)); // ближайшая точка бабла к голове
+    const side=hy>y+h?'b':hy<y?'t':hx<x?'l':'r';
+    const d=Math.hypot(hx-cx,hy-cy)||1,tip=Math.max(8,d-r.height*.2-6),tx=cx+(hx-cx)/d*tip,ty=cy+(hy-cy)/d*tip;
+    const bx=Math.max(x+R+hw,Math.min(x+w-R-hw,cx)),by=Math.max(y+R+hw,Math.min(y+h-R-hw,cy));
+    const T=`L${tx.toFixed(1)},${ty.toFixed(1)}`;
+    const path=`M${x+R},${y}`+(side=='t'?`L${bx-hw},${y}${T}L${bx+hw},${y}`:'')+`L${x+w-R},${y}Q${x+w},${y} ${x+w},${y+R}`
+      +(side=='r'?`L${x+w},${by-hw}${T}L${x+w},${by+hw}`:'')+`L${x+w},${y+h-R}Q${x+w},${y+h} ${x+w-R},${y+h}`
+      +(side=='b'?`L${bx+hw},${y+h}${T}L${bx-hw},${y+h}`:'')+`L${x+R},${y+h}Q${x},${y+h} ${x},${y+h-R}`
+      +(side=='l'?`L${x},${by+hw}${T}L${x},${by-hw}`:'')+`L${x},${y+R}Q${x},${y} ${x+R},${y}Z`;
+    if(!b._w){b._w=document.createElementNS('http://www.w3.org/2000/svg','path');WD.append(b._w)}
+    b._w.setAttribute('d',path);b._w.classList.toggle('on',b.classList.contains('on'))};
+  const arrived=o=>Math.hypot(o.tx-o.x,o.ty-o.y)<.006;
+  const waitFor=(cond,fn,max=6000)=>{const t0=performance.now(),tick=()=>cond()||performance.now()-t0>max?fn():timers.push(setTimeout(tick,200));tick()};
+  const enter=o=>{if(!inScene.has(o)){inScene.add(o);o.lock=true;o.sp=.00024;o.el.classList.add('cast','named')}[o.tx,o.ty]=home.get(o)};
+  const headPx=o=>{const [x,y]=home.get(o);return [x*AW,104+y*(AH-118)-84*(.5+.55*y)*(AW<520?.8:1)]};
+  // Раскладка: каждый новый бабл ищет место рядом со своим говорящим, хвостом в сторону собеседника;
+  // ответ по возможности — прямо под сообщением, на которое отвечает. Место отбрасывается, если бабл
+  // или его хвост задевает чужой бабл, чужой хвост, лицо или подпись имени. Висящие баблы не двигаются.
+  const shown=()=>els.filter(b=>b._box);
+  const segHit=(x1,y1,x2,y2,r)=>{for(let k=1;k<20;k++){const x=x1+(x2-x1)*k/20,y=y1+(y2-y1)*k/20;if(x>r.l&&x<r.r&&y>r.t&&y<r.b)return true}return false};
+  const bodyOf=o=>{const [x,y]=home.get(o),f=figBox(x,y);return {l:f.l-26,r:f.r+26,t:f.t-8,b:f.b+24}};
+  const headOf=o=>{const [x,y]=home.get(o),f=figBox(x,y),sc=(.5+.55*y)*(AW<520?.8:1);return [(f.l+f.r)/2,f.t+6+12*sc]};
+  const reactBoxes=()=>{const ar=A.getBoundingClientRect(),out=[];act.forEach(o=>{if(o.el.classList.contains('rxon')&&o.el.classList.contains('talk')){const r=o.b.getBoundingClientRect();out.push({l:r.left-ar.left-6,r:r.right-ar.left+6,t:r.top-ar.top-6,b:r.bottom-ar.top+6})}});return out};
+  const updAvoid=()=>{const bx=shown().map(b=>({l:b._box.x-10,r:b._box.x+b._box.w+10,t:b._box.y-10,b:b._box.y+b._box.h+10}));
+    AVOID=bx.concat(cast.filter(o=>inScene.has(o)).map(o=>{const r=bodyOf(o);return {l:r.l-20,r:r.r+20,t:r.t-10,b:r.b+10}}));
+    act.forEach(o=>{if(!o.lock&&inAvoid(o.tx,o.ty)){o.next=0;target(o)}})}; // кто шёл за бабл — разворачивается
+  const placeBubble=(b,sp,to,qb)=>{const w=b.offsetWidth,h=b.offsetHeight,[hx,hy]=headOf(sp);
+    const bodies=cast.filter(o=>inScene.has(o)).map(bodyOf).concat(reactBoxes());
+    const others=shown().filter(x=>x!==b),boxes=others.map(x=>({l:x._box.x-8,r:x._box.x+x._box.w+8,t:x._box.y-8,b:x._box.y+x._box.h+8}));
+    const tails=others.map(x=>x._tail).filter(Boolean);
+    const want=to?Math.atan2(headOf(to)[1]-hy,headOf(to)[0]-hx):Math.atan2(-1,(AW/2-hx)/Math.max(AW,1)*2);
+    const cand=[];
+    if(qb&&qb._box){const Q=qb._box;[Q.x+(Q.w-w)/2,Q.x,Q.x+Q.w-w].forEach(x=>cand.push({x,y:Q.y+Q.h+14,bonus:-90}))}
+    for(let k=0;k<16;k++){const ang=k*Math.PI/8,c=Math.cos(ang),s2=Math.sin(ang);
+      [26,55,95,150].forEach(d=>cand.push({x:hx+c*(d+w/2)-w/2,y:hy+s2*(d+h/2)-h/2,bonus:Math.abs(Math.atan2(Math.sin(ang-want),Math.cos(ang-want)))*70}))}
+    let best=null;
+    cand.forEach(c=>{const x=c.x,y=c.y;if(x<4||y<4||x+w>AW-4||y+h>AH-4)return;
+      const box={l:x-6,r:x+w+6,t:y-6,b:y+h+6};
+      if(bodies.some(r=>hits(box,r))||boxes.some(r=>hits(box,r)))return;
+      if(tails.some(t=>segHit(t[0],t[1],t[2],t[3],box)))return;                 // не ложиться на чужой хвост
+      const nx=Math.max(x,Math.min(x+w,hx)),ny=Math.max(y,Math.min(y+h,hy)),len=Math.hypot(hx-nx,hy-ny);
+      if(boxes.some(r=>segHit(nx,ny,hx,hy,r)))return;                           // свой хвост — не через чужие баблы
+      const cost=len+c.bonus;if(!best||cost<best.cost)best={x,y,cost,t:[nx,ny,hx,hy]}});
+    return best};
+  const putBubble=(b,sp,to,qb)=>{let best=placeBubble(b,sp,to,qb);
+    for(let k=0;k<4&&!best;k++){const old=shown().filter(x=>x!==b&&x!==qb)[0];if(!old)break;drop(old);best=placeBubble(b,sp,to,qb)} // места нет — уходит самое старое
+    if(!best){const [hx,hy]=headOf(sp);best={x:Math.max(4,Math.min(AW-b.offsetWidth-4,hx-b.offsetWidth/2)),y:Math.max(4,hy-b.offsetHeight-70),t:null}}
+    const w=b.offsetWidth,h=b.offsetHeight;b._box={x:best.x,y:best.y,w,h};b._tail=best.t;
+    b.style.left=best.x+'px';b.style.top=best.y+'px';wedge(b,best.x,best.y,w,h);updAvoid()};
+  const drop=b=>{b._box=null;b._tail=null;b.classList.remove('on');if(b._w)b._w.classList.remove('on');setTimeout(()=>{b.remove();if(b._w)b._w.remove()},400);updAvoid()};
+  const keep=L.map((l,i)=>Math.max(i+2,...L.map((x,k)=>x.to===i?k+1:-1)));
+  const step=i=>{if(i>=L.length)return at(2200,()=>{fin();done(3500)});
+    L.forEach((_,k)=>{if(keep[k]===i&&live[k]&&live[k]._box)drop(live[k])});
+    const l=L[i],q=l.to!=null?L[l.to]:null,to=q&&q.p!==l.p?q.p:null;
+    enter(l.p);if(to)enter(to);
+    const ms=readMs(l.say,'dialog')+(l.R.length?1400:0);
+    waitFor(()=>arrived(l.p),()=>{
+      const b=document.createElement('div');b.className='tb';
+      b.innerHTML='<span class="tx"></span>';b.querySelector('.tx').textContent=soft(l.say);
+      b._sp=l.p;A.append(b);live[i]=b;els.push(b);
+      const qb=q&&live[l.to]&&live[l.to]._box?live[l.to]:null;
+      putBubble(b,l.p,to||(q?q.p:null),qb);requestAnimationFrame(()=>{b.classList.add('on');if(b._w)b._w.classList.add('on')});
+      l.p.el.classList.add('speaking');setTimeout(()=>l.p.el.classList.remove('speaking'),1600);
+      l.R.forEach((r,j)=>at(1100+j*800,()=>{const h=Math.max(2500,ms-1100-j*800);
+        // эмодзи — с той стороны головы, где нет баблов (справа, слева или сверху)
+        const ar=A.getBoundingClientRect(),hr=r.p.el.querySelector('svg').getBoundingClientRect(),hx=hr.left-ar.left+hr.width/2,hy=hr.top-ar.top+hr.height*.2;
+        const busy=z=>shown().some(x=>hits(z,{l:x._box.x,r:x._box.x+x._box.w,t:x._box.y,b:x._box.y+x._box.h}));
+        const R_={l:hx+8,r:hx+90,t:hy-28,b:hy+28},L_={l:hx-90,r:hx-8,t:hy-28,b:hy+28};
+        r.p.el.classList.remove('eml','emt');if(busy(R_))r.p.el.classList.add(busy(L_)?'emt':'eml');
+        r.p.el.classList.add('cast','rxon');say(r.p,r.e,h,'emo');
+        setTimeout(()=>{r.p.el.classList.remove('rxon');if(!inScene.has(r.p))r.p.el.classList.remove('cast')},h)}));
+      at(ms,()=>step(i+1))},6000)};
+  at(600,()=>step(0));
+  const fin=()=>{AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
+    A.classList.remove('scene-on');act.forEach(o=>o.el.classList.remove('rxon'));L.forEach(l=>l.R.forEach(r=>{if(!inScene.has(r.p))r.p.el.classList.remove('cast')}));
+    cast.forEach(o=>{o.el.classList.remove('cast','named','speaking');o.sp=sp0.get(o)});release(cast);curScene=null};
+  curScene={p:cast[0],stop:()=>{timers.forEach(clearTimeout);fin();zone=null;scene=false}}};
 const director=()=>{if(scene||focus)return kick(2000); // на странице человека сцены идут только из его плейлиста
   const list=(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));
-  if(!list.length)return kick(4000);
-  scene=true;
-  storyScene(rnd(list),pause=>{scene=false;kick(pause+4000+Math.random()*4000)})};
+  const talk=TALK.filter(t=>{const L=talkLines(t);return L.length&&L.every(l=>l.p&&!l.p.lock)&&(!sel||L.some(l=>l.p.hi))});
+  if(!list.length&&!talk.length)return kick(4000);
+  scene=true;const fin=pause=>{scene=false;kick(pause+4000+Math.random()*4000)};
+  // истории главные; реплики — в паузах между ними (если историй нет — только реплики)
+  if(list.length&&(!talk.length||Math.random()<.5))storyScene(rnd(list),fin);else talkScene(rnd(talk),fin)};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
