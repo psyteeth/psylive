@@ -665,12 +665,18 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
   // хвост-клин от бабла к голове говорящего: видно, кто говорит, даже если бабл сдвинут
   const WD=document.createElementNS('http://www.w3.org/2000/svg','svg');WD.setAttribute('class','wedges');A.append(WD);
   // бабл и хвост — один контур: скруглённый прямоугольник, в стороне к говорящему — клин до его головы
+  // основание хвоста: сторона, из которой он выходит круче всего наружу (а не вдоль края тонкой щелью);
+  // ширина основания — по размеру стороны, чтобы клин не залезал на скругления углов
+  const tailBase=(x,y,w,h,hx,hy)=>{const R=Math.max(6,Math.min(16,h/2-6,w/2-6)),hwH=Math.min(11,w/2-R),hwV=Math.min(11,h/2-R);
+    const cl=(v,lo,hi)=>lo>hi?(lo+hi)/2:Math.max(lo,Math.min(hi,v));
+    const S=[['t',cl(hx,x+R+hwH,x+w-R-hwH),y,0,-1,hwH],['b',cl(hx,x+R+hwH,x+w-R-hwH),y+h,0,1,hwH],
+      ['l',x,cl(hy,y+R+hwV,y+h-R-hwV),-1,0,hwV],['r',x+w,cl(hy,y+R+hwV,y+h-R-hwV),1,0,hwV]];
+    let b=null,bs=-9;S.forEach(s=>{const vx=hx-s[1],vy=hy-s[2],sc=(vx*s[3]+vy*s[4])/(Math.hypot(vx,vy)||1);if(sc>bs){bs=sc;b=s}});
+    return [b[0],b[1],b[2],b[5],R]};
   const wedge=(b,x,y,w,h)=>{const o=b._sp;if(!o)return;const r=o.el.querySelector('svg').getBoundingClientRect(),ar=A.getBoundingClientRect();
-    const hx=r.left-ar.left+r.width/2,hy=r.top-ar.top+r.height*.15,R=16,hw=10;
-    const cx=Math.max(x,Math.min(x+w,hx)),cy=Math.max(y,Math.min(y+h,hy)); // ближайшая точка бабла к голове
-    const side=hy>y+h?'b':hy<y?'t':hx<x?'l':'r';
-    const d=Math.hypot(hx-cx,hy-cy)||1,tip=Math.max(8,d-r.height*.2-6),tx=cx+(hx-cx)/d*tip,ty=cy+(hy-cy)/d*tip;
-    const bx=Math.max(x+R+hw,Math.min(x+w-R-hw,cx)),by=Math.max(y+R+hw,Math.min(y+h-R-hw,cy));
+    const hx=r.left-ar.left+r.width/2,hy=r.top-ar.top+r.height*.15;
+    const [side,cx,cy,hw,R]=tailBase(x,y,w,h,hx,hy),bx=cx,by=cy;
+    const d=Math.hypot(hx-cx,hy-cy)||1,tip=Math.max(10,d-r.height*.2-6),tx=cx+(hx-cx)/d*tip,ty=cy+(hy-cy)/d*tip;
     const T=`L${tx.toFixed(1)},${ty.toFixed(1)}`;
     const path=`M${x+R},${y}`+(side=='t'?`L${bx-hw},${y}${T}L${bx+hw},${y}`:'')+`L${x+w-R},${y}Q${x+w},${y} ${x+w},${y+R}`
       +(side=='r'?`L${x+w},${by-hw}${T}L${x+w},${by+hw}`:'')+`L${x+w},${y+h-R}Q${x+w},${y+h} ${x+w-R},${y+h}`
@@ -678,6 +684,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
       +(side=='l'?`L${x},${by+hw}${T}L${x},${by-hw}`:'')+`L${x},${y+R}Q${x},${y} ${x+R},${y}Z`;
     if(!b._w){b._w=document.createElementNS('http://www.w3.org/2000/svg','path');WD.append(b._w)}
     b._w.setAttribute('d',path);b._w.classList.toggle('on',b.classList.contains('on'))};
+  const rewedge=setInterval(()=>els.forEach(b=>{if(b._box)wedge(b,b._box.x,b._box.y,b._box.w,b._box.h)}),120); // хвост следит за головой, пока та доходит
   const arrived=o=>Math.hypot(o.tx-o.x,o.ty-o.y)<.006;
   const waitFor=(cond,fn,max=6000)=>{const t0=performance.now(),tick=()=>cond()||performance.now()-t0>max?fn():timers.push(setTimeout(tick,200));tick()};
   const enter=o=>{if(!inScene.has(o)){inScene.add(o);o.lock=true;o.sp=.00024;o.el.classList.add('cast','named')}[o.tx,o.ty]=home.get(o)};
@@ -707,7 +714,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
       const box={l:x-6,r:x+w+6,t:y-6,b:y+h+6};
       if(bodies.some(r=>hits(box,r))||boxes.some(r=>hits(box,r)))return;
       if(tails.some(t=>segHit(t[0],t[1],t[2],t[3],box)))return;                 // не ложиться на чужой хвост
-      const nx=Math.max(x,Math.min(x+w,hx)),ny=Math.max(y,Math.min(y+h,hy)),len=Math.hypot(hx-nx,hy-ny);
+      const [,nx,ny]=tailBase(x,y,w,h,hx,hy),len=Math.hypot(hx-nx,hy-ny);
       if(boxes.some(r=>segHit(nx,ny,hx,hy,r)))return;                           // свой хвост — не через чужие баблы
       const cost=len+c.bonus;if(!best||cost<best.cost)best={x,y,cost,t:[nx,ny,hx,hy]}});
     return best};
@@ -722,6 +729,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
     L.forEach((_,k)=>{if(keep[k]===i&&live[k]&&live[k]._box)drop(live[k])});
     const l=L[i],q=l.to!=null?L[l.to]:null,to=q&&q.p!==l.p?q.p:null;
     enter(l.p);if(to)enter(to);
+    l.R.forEach(r=>{if(cast.includes(r.p))enter(r.p)}); // реагирующий из диалога — встаёт на своё место
     const ms=readMs(l.say,'dialog')+(l.R.length?1400:0);
     waitFor(()=>arrived(l.p),()=>{
       const b=document.createElement('div');b.className='tb';
@@ -736,11 +744,13 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
         const busy=z=>shown().some(x=>hits(z,{l:x._box.x,r:x._box.x+x._box.w,t:x._box.y,b:x._box.y+x._box.h}));
         const R_={l:hx+8,r:hx+90,t:hy-28,b:hy+28},L_={l:hx-90,r:hx-8,t:hy-28,b:hy+28};
         r.p.el.classList.remove('eml','emt');if(busy(R_))r.p.el.classList.add(busy(L_)?'emt':'eml');
+        // реагирующий со стороны замирает на месте, пока висит эмодзи — не ходит по баблам и людям
+        const fz=!inScene.has(r.p)&&!r.p.lock;if(fz){r.p.lock=true;r.p.tx=r.p.x;r.p.ty=r.p.y}
         r.p.el.classList.add('cast','rxon');say(r.p,r.e,h,'emo');
-        setTimeout(()=>{r.p.el.classList.remove('rxon');if(!inScene.has(r.p))r.p.el.classList.remove('cast')},h)}));
+        setTimeout(()=>{r.p.el.classList.remove('rxon');if(!inScene.has(r.p)){r.p.el.classList.remove('cast');if(fz){r.p.lock=false;r.p.next=0}}},h)}));
       at(ms,()=>step(i+1))},6000)};
   at(600,()=>step(0));
-  const fin=()=>{AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
+  const fin=()=>{clearInterval(rewedge);AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
     A.classList.remove('scene-on');act.forEach(o=>o.el.classList.remove('rxon'));L.forEach(l=>l.R.forEach(r=>{if(!inScene.has(r.p))r.p.el.classList.remove('cast')}));
     cast.forEach(o=>{o.el.classList.remove('cast','named','speaking');o.sp=sp0.get(o)});release(cast);curScene=null};
   curScene={p:cast[0],stop:()=>{timers.forEach(clearTimeout);fin();zone=null;scene=false}}};
