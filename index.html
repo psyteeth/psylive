@@ -135,6 +135,7 @@ body.focus .info{display:none}
 .pl .plh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.pl .hello{margin:0;font-size:15px}
 .pl .back,.pl .more{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 14px Inter,system-ui,sans-serif;cursor:pointer;justify-self:start}
 .pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
+.pl .pltabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.pl .pltabs button{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 15px Inter,system-ui,sans-serif;cursor:pointer}.pl .pltabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
 .pl ol{margin:0;padding-left:28px;display:grid;gap:2px}.pl li button{min-height:36px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:500 16px Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
 .pl li button:hover{background:var(--accs)}.pl li.on button{background:var(--acc);color:var(--acct);font-weight:700}
 .p.hit svg{animation:hit .12s linear 6}.p.hit.rage svg{animation:hit .1s linear 24}@keyframes hit{25%{translate:-5px 0}75%{translate:5px 0}}
@@ -200,7 +201,7 @@ body[data-v="1"] .b,body[data-v="2"] .b{border-radius:22px 16px 20px 14px}
   <p class="info" id="info" aria-live="polite"></p>
   <div class="stage">
     <div class="tw" id="tw"><button class="tzoom" id="tzoom" type="button" aria-pressed="false">⤢ крупнее</button><svg class="teeth" id="teeth" role="group" aria-label="Зубная формула, 32 зуба"></svg><svg class="teeth teethM" id="teethM" role="group" aria-label="Зубная формула, 32 зуба"></svg></div>
-    <section class="pl" id="pl" hidden aria-live="polite"><div class="plh"><button class="back" type="button">← все участники</button><p class="hello"></p></div><h3></h3><p class="empty">Сцен пока нет. Они появятся после созвонов.</p><ol></ol><button class="more" type="button" hidden></button></section>
+    <section class="pl" id="pl" hidden aria-live="polite"><div class="plh"><button class="back" type="button">← все участники</button><p class="hello"></p></div><div class="pltabs" role="tablist" aria-label="Что смотреть"><button type="button" role="tab" data-t="life"></button><button type="button" role="tab" data-t="atk"></button></div><h3 hidden></h3><p class="empty"></p><ol></ol><button class="more" type="button" hidden></button></section>
     <div class="arena" id="arena"><div class="card" id="card" hidden></div></div>
   </div>
 </div>
@@ -628,11 +629,16 @@ const PL=$('#pl');
 const isAtk=c=>!Array.isArray(c),toothOfScene=c=>isAtk(c)?String(c.tooth||''):c[11];
 const scenesOf=p=>[...storiesOf(p),...ATK.filter(a=>a.who===p.name)]; // истории с триггером и атаки
 const teethOf=p=>[...new Set([...p.teeth,...scenesOf(p).map(toothOfScene).filter(Boolean)])].sort();
-const sceneTitle=c=>{if(isAtk(c))return `Атака${c.role?' · '+c.role:''}: «${atkText(c)}»`;const r=cap(c[1]||'адресат');return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
-const plList=()=>scenesOf(focus).filter(c=>!fT||toothOfScene(c)===fT);
+const sceneTitle=c=>{if(isAtk(c))return c.role?`${cap(c.role)}: «${atkText(c)}»`:`«${atkText(c)}»`;const r=cap(c[1]||'адресат');return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
+/* две вкладки: «Сцены из жизни» (истории с триггером) и «Атаки» — списки и очереди не смешиваются */
+let plTab='life';const TABN={life:'Сцены из жизни',atk:'Атаки'};
+const plAll=t=>scenesOf(focus).filter(c=>(t=='atk')===isAtk(c)&&(!fT||toothOfScene(c)===fT));
+const plList=()=>plAll(plTab);
 const plRender=()=>{const L=plList(),shown=plOpen?L:L.slice(0,10);
   PL.querySelector('.hello').textContent=greet(focus);
-  PL.querySelector('h3').textContent=fT?`Сцены из жизни по ${fT} зубу`:'Сцены из жизни';
+  PL.querySelectorAll('.pltabs button').forEach(b=>{const t=b.dataset.t;b.textContent=`${TABN[t]} · ${plAll(t).length}`;b.setAttribute('aria-selected',t==plTab)});
+  const h=PL.querySelector('h3');h.hidden=!fT;h.textContent=fT?`${TABN[plTab]} по ${fT} зубу`:'';
+  PL.querySelector('.empty').textContent=plTab=='atk'?'Атак пока нет.':'Сцен пока нет. Они появятся после созвонов.';
   const ol=PL.querySelector('ol');ol.innerHTML='';
   shown.forEach((c,k)=>{const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.textContent=sceneTitle(c);
     b.addEventListener('click',()=>playFrom(L.indexOf(c)));if(curScene&&curScene.c===c)li.className='on';li.append(b);ol.append(li)});
@@ -646,7 +652,7 @@ const playNext=()=>{if(!focus||!queue.length)return plRender();const c=queue.shi
 const playFrom=k=>{queue=plList().slice(k);playNext();if(innerWidth<900)A.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'})}; // на телефоне список над листом: прокручиваем к сцене
 const enterFocus=p=>{if(curScene)curScene.stop();scene=false;clearTimeout(dirT);queue=[];
   if(focus)focus.el.classList.remove('hero');
-  if(sel)pick(sel);focus=p;fT=null;plOpen=false;C.hidden=true;
+  if(sel)pick(sel);focus=p;fT=null;plOpen=false;C.hidden=true;plTab=storiesOf(p).length||!ATK.some(a=>a.who===p.name)?'life':'atk';
   document.body.classList.add('focus');p.el.classList.add('hero');p.lock=false;p.next=0;
   PL.hidden=false;markTeeth();plRender();$('.stage').scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})};
 const exitFocus=()=>{if(!focus)return;if(curScene)curScene.stop();scene=false;queue=[];
@@ -662,6 +668,8 @@ let TALK=[];
 fetch('data/talk.json',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(t=>{TALK=Array.isArray(t)?t:[]}).catch(()=>{});
 const byNick=n=>act.find(p=>p.name===n);
 /* Реплика или целый диалог из переписки: {who,say,react} или {order:[…], lines:[{who,say,to,react},…]}.
+PL.querySelector('.pltabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.t==plTab)return;
+  plTab=b.dataset.t;plOpen=false;queue=[];if(curScene){curScene.stop();scene=false}plRender()}); // другая вкладка: текущая сцена останавливается
    Раскладка по рисунку владельца: участники стоят просторно (трое — треугольником: order[0] слева вверху,
    order[1] снизу, order[2] справа вверху) и подходят, когда им пора говорить. Бабл висит между тем, кто
    говорит, и тем, кому он отвечает («to»), хвостиком к говорящему; переписка каждой пары идёт в своём
