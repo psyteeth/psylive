@@ -852,7 +852,7 @@ $('#tzoom').addEventListener('click',e=>{const on=$('#tw').classList.toggle('tbi
 const toothTap=f=>{if(!focus)return pick(f);if(!teethOf(focus).includes(f))return;fT=fT===f?null:f;plOpen=false;markTeeth();plRender()};
 [T,TM].forEach(svg=>{svg.addEventListener('click',e=>{const g=e.target.closest('.tooth');if(g)toothTap(g.dataset.f)});
   svg.addEventListener('keydown',e=>{const g=e.target.closest('.tooth');if(g&&(e.key=='Enter'||e.key==' ')){e.preventDefault();toothTap(g.dataset.f)}})});
-$('#all').addEventListener('click',()=>{if(sel)pick(sel)});
+$('#all').addEventListener('click',()=>{exitFocus();if(sel)pick(sel)});
 
 /* окошко человека */
 const C=$('#card'),tl=f=>`${f} (${tname(f)})`;
