@@ -683,8 +683,19 @@ const byNick=n=>act.find(p=>p.name===n);
    коридоре, новый бабл — под предыдущим. Реакции — эмодзи у головы реагирующего (и гуляющих вокруг). */
 const talkLines=T0=>(T0.lines||[T0]).map(l=>({p:byNick(l.who),say:l.say,to:l.to,R:(l.react||[]).map(r=>({p:byNick(r.who),e:r.emoji})).filter(r=>r.p)}));
 const SPOTS={1:[[.5,.7]],2:[[.28,.66],[.72,.66]],3:[[.2,.5],[.5,.93],[.8,.5]],4:[[.2,.5],[.35,.93],[.65,.93],[.8,.5]]};
+/* Простая реплика (одна фраза и реакции, как «Тройничок в поле витает» + 💯) — на ходу:
+   говорящий не останавливается, бабл едет над головой, реакции всплывают у тех, кто реагирует, тоже на ходу.
+   Площадка не бледнеет, никто не выходит в центр. */
+const walkTalk=(l,done)=>{const p=l.p;if(p.lock)return done(300);
+  const timers=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms)),ms=readMs(l.say,'dialog')+(l.R.length?1600:600),sp0=p.sp,who=[p];
+  p.sp=sp0*.55;p.el.classList.add('named');say(p,l.say,ms,''); // идёт помедленнее, чтобы фразу успели прочитать
+  l.R.forEach((r,j)=>{if(r.p.lock)return;who.push(r.p);at(1200+j*900,()=>{r.p.el.classList.add('named');say(r.p,r.e,Math.max(2500,ms-1200-j*900),'emo')})});
+  const fin=()=>{timers.forEach(clearTimeout);p.sp=sp0;who.forEach(o=>o.el.classList.remove('named'));curScene=null};
+  at(ms+300,()=>{fin();done(2500)});
+  curScene={p,stop:()=>{fin();who.forEach(o=>o.el.classList.remove('talk','emo'));scene=false}}};
 const talkScene=(T0,done)=>{const L=talkLines(T0);
   if(!L.length||L.some(l=>!l.p||!l.say))return done(300);
+  if(L.length==1)return walkTalk(L[0],done);
   const who=new Set();L.forEach(l=>who.add(l.p)); // в кругу — только те, кто говорит; реагируют и гуляющие вокруг
   let cast=(T0.order||[]).map(byNick).filter(o=>o&&who.has(o));
   [...who].forEach(o=>{if(!cast.includes(o))cast.push(o)});cast=cast.slice(0,4);
