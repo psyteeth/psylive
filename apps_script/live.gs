@@ -148,6 +148,14 @@ function norm_(s) {
   return String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я\s]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Обычные слова, которые начинаются как имя: «настоящая» ~ Настя, «любимый» ~ Люба, «верно» ~ Вера.
+// Защита от имён во фразах (safe) такие слова не считает именем. Начало слова, ё → е.
+var NOT_NAMES = ['настоящ', 'любим', 'любл', 'любит', 'любят', 'любя', 'верн', 'верит', 'верю', 'верят', 'верх', 'вероят', 'январ'];
+function notName_(w) {
+  for (var i = 0; i < NOT_NAMES.length; i++) if (w.indexOf(NOT_NAMES[i]) === 0) return true;
+  return false;
+}
+
 var TR = { 'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya' };
 function translit_(s) { return s.split('').map(function (c) { return TR[c] != null ? TR[c] : c; }).join(''); }
 function latVariants_(s) {
@@ -614,6 +622,7 @@ function buildLive_(inp, nowMs, salt, hash) {
   function safe(t) {
     var w = norm_(t).split(' ');
     for (var i = 0; i < w.length; i++) {
+      if (notName_(w[i])) continue;
       for (var j = 0; j < stems.length; j++) if (w[i] === stems[j] || (stems[j].length >= 4 && w[i].indexOf(stems[j]) === 0)) return false;
     }
     var re = /([А-ЯЁа-яё]+)(\s*[,—–-])?/g, m;
