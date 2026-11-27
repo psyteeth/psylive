@@ -72,7 +72,7 @@ body[data-v="1"] .hd,body[data-v="2"] .hd{fill:var(--bg);stroke:var(--c);stroke-
 .p.dim{opacity:.13}
 .b{display:none;position:absolute;left:50%;bottom:calc(84px*var(--s,1) + 12px);transform:translateX(-24px);width:max-content;max-width:200px;padding:7px 11px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:16px;font-size:14px;line-height:1.25;z-index:2}
 .b::after{content:"";position:absolute;left:14px;bottom:-8px;width:12px;height:12px;background:var(--bub);border-right:2px solid var(--bubl);border-bottom:2px solid var(--bubl);transform:rotate(45deg)}
-.r .b{transform:translateX(calc(-100% + 24px))}.r .b::after{left:auto;right:14px}
+.r .b{transform:translateX(calc(-100% + 24px))}.b{translate:var(--bx,0px) 0}.b::after{translate:calc(-1*var(--bx,0px)) 0} /* --bx: бабл сдвинут внутрь площадки, хвостик остаётся над головой */.r .b::after{left:auto;right:14px}
 .talk .b{display:block}
 .p.sad .nm:empty{display:none!important}
 .p.sad .nm{display:block;top:auto;bottom:calc(84px*var(--s,1) + 2px);font-size:12px;background:var(--bub);color:var(--bubi);border:1px solid var(--bubl);border-radius:8px;padding:0 6px}
@@ -122,6 +122,7 @@ body[data-v="1"] .hd,body[data-v="2"] .hd{fill:var(--bg);stroke:var(--c);stroke-
 /* бабл над увеличенным человечком: поднимаем на его рост, чтобы не закрывал лицо */
 .p.fighter .b{bottom:calc(84px*var(--s,1)*1.3 + 12px);transition:bottom .8s}.p.big.fighter .b{bottom:calc(84px*var(--s,1)*1.55 + 12px)}.p.fighter.small .b{bottom:calc(84px*var(--s,1)*.85 + 12px)}@media(max-width:600px){.p.fighter .b{max-width:44vw!important}}.p.fighter.small svg{transform:scale(calc(var(--s,1)*.85))!important}
 .scene-on .p:not(.cast):not(.old){opacity:.22;transition:opacity .8s}.p{transition:opacity .8s}
+.scene-on .p.tuck:not(.cast){opacity:0!important} /* в диалоге: кто оказался в центре сценки или за баблом — не виден */
 .p.kick .nm{display:none!important}
 /* атака: необычный человечек (пунктирная голова), иногда прикрывается предметом */
 .p.attacker .hd{stroke-dasharray:3 2.4}.p.attacker .prop{font-size:34px}
@@ -134,8 +135,8 @@ body.focus .info{display:none}
 @media(min-width:900px){body.focus .stage{display:grid;grid-template-columns:minmax(280px,360px) 1fr}body.focus .tw{grid-column:1/-1}body.focus .pl{border-bottom:0;border-right:2px dashed var(--fig)}}
 .pl .plh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.pl .hello{margin:0;font-size:15px}
 .pl .back,.pl .more{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 14px Inter,system-ui,sans-serif;cursor:pointer;justify-self:start}
-.pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
 .pl .pltabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.pl .pltabs button{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 15px Inter,system-ui,sans-serif;cursor:pointer}.pl .pltabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
 .pl ol{margin:0;padding-left:28px;display:grid;gap:2px}.pl li button{min-height:36px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:500 16px Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
 .pl li button:hover{background:var(--accs)}.pl li.on button{background:var(--acc);color:var(--acct);font-weight:700}
 .p.hit svg{animation:hit .12s linear 6}.p.hit.rage svg{animation:hit .1s linear 24}@keyframes hit{25%{translate:-5px 0}75%{translate:5px 0}}
@@ -150,8 +151,8 @@ body.focus .info{display:none}
 body[data-v="1"] .tb,body[data-v="2"] .tb{border-radius:22px 16px 20px 14px}
 .tb.on{opacity:1;transform:none}
 /* коллаж «в ванной»: две рамки-карточки, в каждой своя ванна */
-.tubs{position:absolute;left:50%;top:52%;display:flex;gap:22px;z-index:420;opacity:0;transform:translate(-50%,-50%) scale(.92);transition:opacity .5s,transform .5s;pointer-events:none}
-.tubs.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.tubs{position:absolute;left:50%;top:52%;display:flex;gap:22px;z-index:420;opacity:0;transform:translate(-50%,-50%) scale(calc(var(--k,1)*.92));transition:opacity .5s,transform .5s;pointer-events:none}
+.tubs.on{opacity:1;transform:translate(-50%,-50%) scale(var(--k,1))} /* --k: на узком экране коллаж уменьшается целиком */
 .tubf{position:relative;width:200px;height:156px;background:var(--bg,#fffdf6);border:2px solid var(--fig);border-radius:6px;box-shadow:3px 4px 0 rgba(0,0,0,.12);overflow:hidden}
 .tubf:nth-child(1){rotate:-3deg}.tubf:nth-child(2){rotate:2.5deg}
 .tubf .fig{position:absolute;left:60px;top:52px;width:40px;height:36px;overflow:hidden;rotate:-14deg;scale:1.3;transform-origin:50% 40%}.tubf .fig svg{width:40px;height:84px;overflow:visible;display:block}
@@ -162,8 +163,8 @@ body[data-v="1"] .tb,body[data-v="2"] .tb{border-radius:22px 16px 20px 14px}
 .tubf .nm2{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:12px;font-weight:700;color:var(--fig)}
 .tubf.dark{background:#24242c}.tubf.dark .tb2{fill:#3a3a46;stroke:#9a9aa8}.tubf.dark .tl,.tubf.dark .tp{stroke:#9a9aa8}.tubf.dark .fm circle{fill:#4a4a58;stroke:#6a6a7a}.tubf.dark .nm2{color:#ccc}.tubf.dark .fig{filter:brightness(.75)}
 .wedges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:359;transition:opacity .4s}
-.wedges path{fill:var(--bub);stroke:var(--bubl);stroke-width:2;stroke-linejoin:round;opacity:0;transition:opacity .3s,d .35s}.wedges path.on{opacity:1} /* бабл с хвостом к голове говорящего — одним контуром */
-.tb{background:transparent!important;border-color:transparent!important;transition:opacity .3s!important;transform:none!important} /* без переезда: текст и контур двигаются вместе */ /* сам контур рисует svg, текст поверх */
+.wedges path{fill:var(--bub);stroke:var(--bubl);stroke-width:2;stroke-linejoin:round;opacity:0;transition:opacity .6s}.wedges path.on{opacity:1} /* бабл с хвостом к голове говорящего — одним контуром */
+.tb{background:transparent!important;border-color:transparent!important;transition:opacity .6s,top 1s cubic-bezier(.25,.8,.3,1)!important;transform:none!important} /* без переезда: текст и контур двигаются вместе */ /* сам контур рисует svg, текст поверх */
 .p.rxon{z-index:390!important} /* реакция — поверх баблов */
 .p.named .nm{display:block}
 @media(prefers-reduced-motion:reduce){.tb{transition:opacity .3s}.tb .rx{animation:none}}
@@ -313,10 +314,16 @@ const tick=t=>{const dt=Math.min(50,t-last);last=t;
     if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
     else if(d>.004){const out=!p.lock&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b||inAvoid(p.x,p.y)),v=Math.min(p.sp*dt*(calm&&!p.lock?(out?.42:.3)*Math.min(1,.35+d/.05):out?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=calm&&!p.lock?dt*.5:dt;p.moving=true}
     else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+(calm?4000+Math.random()*6000:800+Math.random()*3800);else if(t>p.next){p.next=0;target(p)}}}
+    if(calm||p.tk){const tk=calm&&!p.lock&&!p.el.classList.contains('cast')&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y>zone.t&&p.y<zone.b||inAvoid(p.x,p.y));
+      if(tk!==!!p.tk){p.tk=tk;p.el.classList.toggle('tuck',tk)}}
     place(p)}
   requestAnimationFrame(tick)};
 
 const say=(p,txt,ms,kind)=>{p.b.textContent=soft(txt);p.el.classList.add('talk');['fight','pb','pa','paa','react','brag','emo'].forEach(k=>p.el.classList.toggle(k,kind==k));
+  // бабл не вылезает за край площадки (узкий экран, человечек у края): сдвигаем его внутрь
+  p.b.style.removeProperty('--bx');requestAnimationFrame(()=>{const r=p.b.getBoundingClientRect(),a=A.getBoundingClientRect();if(!r.width)return;
+    let dx=r.left<a.left+6?a.left+6-r.left:r.right>a.right-6?a.right-6-r.right:0;dx=Math.max(-(r.width-34),Math.min(r.width-34,dx));
+    if(dx)p.b.style.setProperty('--bx',dx.toFixed(1)+'px')});
   clearTimeout(p.st);p.st=setTimeout(()=>p.el.classList.remove('talk','fight','pb','pa','paa','react','brag','emo'),ms)};
 /* сколько держать бабл: никуда не торопимся.
    Одиночная фраза (монолог, точка Б, бот) висит ~10 секунд, реплика в диалоге ~5 секунд; длинные чуть дольше. */
@@ -661,6 +668,8 @@ const exitFocus=()=>{if(!focus)return;if(curScene)curScene.stop();scene=false;qu
 const tap=p=>{if(p.sad||p.bot)return;if(focus===p)return;enterFocus(p)};
 PL.querySelector('.back').addEventListener('click',exitFocus);
 PL.querySelector('.more').addEventListener('click',()=>{plOpen=!plOpen;plRender()});
+PL.querySelector('.pltabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.t==plTab)return;
+  plTab=b.dataset.t;plOpen=false;queue=[];if(curScene){curScene.stop();scene=false}plRender()}); // другая вкладка: текущая сцена останавливается
 addEventListener('keydown',e=>{if(e.key=='Escape')exitFocus()});
 /* Обычные реплики (data/talk.json): фразы, которые владелец выбрал по скринам чата.
    Человечек говорит фразу, через секунду другой отвечает реакцией (💯, 😂…), обе висят. */
@@ -668,8 +677,6 @@ let TALK=[];
 fetch('data/talk.json',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(t=>{TALK=Array.isArray(t)?t:[]}).catch(()=>{});
 const byNick=n=>act.find(p=>p.name===n);
 /* Реплика или целый диалог из переписки: {who,say,react} или {order:[…], lines:[{who,say,to,react},…]}.
-PL.querySelector('.pltabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.t==plTab)return;
-  plTab=b.dataset.t;plOpen=false;queue=[];if(curScene){curScene.stop();scene=false}plRender()}); // другая вкладка: текущая сцена останавливается
    Раскладка по рисунку владельца: участники стоят просторно (трое — треугольником: order[0] слева вверху,
    order[1] снизу, order[2] справа вверху) и подходят, когда им пора говорить. Бабл висит между тем, кто
    говорит, и тем, кому он отвечает («to»), хвостиком к говорящему; переписка каждой пары идёт в своём
@@ -690,7 +697,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
    const inZ=(x,y)=>x>zone.l&&x<zone.r&&y>zone.t&&y<zone.b; // уходят только те, кто в центре или идёт туда
    act.filter(o=>!o.lock&&(inZ(o.x,o.y)||inZ(o.tx,o.ty))).forEach(o=>{o.next=0;target(o)})}
   A.classList.add('scene-on');calm=true;
-  const els=[],live=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms));
+  const els=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms));
   // хвост-клин от бабла к голове говорящего: видно, кто говорит, даже если бабл сдвинут
   const WD=document.createElementNS('http://www.w3.org/2000/svg','svg');WD.setAttribute('class','wedges');A.append(WD);
   // бабл и хвост — один контур: скруглённый прямоугольник, в стороне к говорящему — клин до его головы
@@ -702,7 +709,14 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
       ['l',x,cl(hy,y+R+hwV,y+h-R-hwV),-1,0,hwV],['r',x+w,cl(hy,y+R+hwV,y+h-R-hwV),1,0,hwV]];
     let b=null,bs=-9;S.forEach(s=>{const vx=hx-s[1],vy=hy-s[2],sc=(vx*s[3]+vy*s[4])/(Math.hypot(vx,vy)||1);if(sc>bs){bs=sc;b=s}});
     return [b[0],b[1],b[2],b[5],R]};
-  const wedge=(b,x,y,w,h)=>{const o=b._sp;if(!o)return;const r=o.el.querySelector('svg').getBoundingClientRect(),ar=A.getBoundingClientRect();
+  const rect=(x,y,w,h,R)=>`M${x+R},${y}L${x+w-R},${y}Q${x+w},${y} ${x+w},${y+R}L${x+w},${y+h-R}Q${x+w},${y+h} ${x+w-R},${y+h}L${x+R},${y+h}Q${x},${y+h} ${x},${y+h-R}L${x},${y+R}Q${x},${y} ${x+R},${y}Z`;
+  const wedge=(b,x,y,w,h)=>{const o=b._sp;if(!o)return;
+    if(!b._w){b._w=document.createElementNS('http://www.w3.org/2000/svg','path');WD.append(b._w)}
+    const R0=Math.max(6,Math.min(16,h/2-6,w/2-6)),s_=b._str;
+    if(b._fly||s_&&s_.isConnected){ // висит на ниточке за облачко под ним (или улетает)
+      let d=rect(x,y,w,h,R0);if(!b._fly){const sx=s_.offsetLeft+s_.offsetWidth/2,sy=s_.offsetTop,cx=Math.max(x+R0,Math.min(x+w-R0,sx));d+=`M${cx.toFixed(1)},${y+h}L${sx.toFixed(1)},${sy}`}
+      b._w.setAttribute('d',d);b._w.classList.toggle('on',b.classList.contains('on'));return}
+    const r=o.el.querySelector('svg').getBoundingClientRect(),ar=A.getBoundingClientRect();
     const hx=r.left-ar.left+r.width/2,hy=r.top-ar.top+r.height*.15;
     const [side,cx,cy,hw,R]=tailBase(x,y,w,h,hx,hy),bx=cx,by=cy;
     const d=Math.hypot(hx-cx,hy-cy)||1,tip=Math.max(10,d-r.height*.2-6),tx=cx+(hx-cx)/d*tip,ty=cy+(hy-cy)/d*tip;
@@ -713,52 +727,41 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
       +(side=='l'?`L${x},${by+hw}${T}L${x},${by-hw}`:'')+`L${x},${y+R}Q${x},${y} ${x+R},${y}Z`;
     if(!b._w){b._w=document.createElementNS('http://www.w3.org/2000/svg','path');WD.append(b._w)}
     b._w.setAttribute('d',path);b._w.classList.toggle('on',b.classList.contains('on'))};
-  const rewedge=setInterval(()=>els.forEach(b=>{if(b._box)wedge(b,b._box.x,b._box.y,b._box.w,b._box.h)}),120); // хвост следит за головой, пока та доходит
+  // контур с хвостом каждый кадр повторяет за текстом: облачко плывёт — хвост тянется следом, голова идёт — хвост за ней
+  let alive=true;const rw=()=>{if(!alive)return;els.forEach(b=>{if((b._box||b._fly)&&b._sp)wedge(b,b.offsetLeft,b.offsetTop,b.offsetWidth,b.offsetHeight)});requestAnimationFrame(rw)};rw();
   const arrived=o=>Math.hypot(o.tx-o.x,o.ty-o.y)<.006;
   const waitFor=(cond,fn,max=6000)=>{const t0=performance.now(),tick=()=>cond()||performance.now()-t0>max?fn():timers.push(setTimeout(tick,200));tick()};
   const enter=o=>{if(!inScene.has(o)){inScene.add(o);o.lock=true;o.sp=.00024;o.el.classList.add('cast','named')}[o.tx,o.ty]=home.get(o)};
   const headPx=o=>{const [x,y]=home.get(o);return [x*AW,104+y*(AH-118)-84*(.5+.55*y)*(AW<520?.8:1)]};
-  // Раскладка: каждый новый бабл ищет место рядом со своим говорящим, хвостом в сторону собеседника;
-  // ответ по возможности — прямо под сообщением, на которое отвечает. Место отбрасывается, если бабл
-  // или его хвост задевает чужой бабл, чужой хвост, лицо или подпись имени. Висящие баблы не двигаются.
+  // Раскладка по рисунку владельца: у каждого говорящего свой столбик облачков над головой.
+  // Новое сообщение — внизу, хвостиком к голове; прежние плавно поднимаются, как шарики,
+  // и висят на ниточке за облачко под ними. Что уходит за верх (или четвёртое в столбике) — тает.
   const shown=()=>els.filter(b=>b._box);
-  const segHit=(x1,y1,x2,y2,r)=>{for(let k=1;k<20;k++){const x=x1+(x2-x1)*k/20,y=y1+(y2-y1)*k/20;if(x>r.l&&x<r.r&&y>r.t&&y<r.b)return true}return false};
   const bodyOf=o=>{const [x,y]=home.get(o),f=figBox(x,y);return {l:f.l-26,r:f.r+26,t:f.t-8,b:f.b+24}};
   const headOf=o=>{const [x,y]=home.get(o),f=figBox(x,y),sc=(.5+.55*y)*(AW<520?.8:1);return [(f.l+f.r)/2,f.t+6+12*sc]};
-  const reactBoxes=()=>{const ar=A.getBoundingClientRect(),out=[];act.forEach(o=>{if(o.el.classList.contains('rxon')&&o.el.classList.contains('talk')){const r=o.b.getBoundingClientRect();out.push({l:r.left-ar.left-6,r:r.right-ar.left+6,t:r.top-ar.top-6,b:r.bottom-ar.top+6})}});return out};
   const updAvoid=()=>{const bx=shown().map(b=>({l:b._box.x-10,r:b._box.x+b._box.w+10,t:b._box.y-10,b:b._box.y+b._box.h+10}));
     AVOID=bx.concat(cast.filter(o=>inScene.has(o)).map(o=>{const r=bodyOf(o);return {l:r.l-20,r:r.r+20,t:r.t-10,b:r.b+10}}));
-    act.forEach(o=>{if(!o.lock&&inAvoid(o.tx,o.ty)){o.next=0;target(o)}})}; // кто шёл за бабл — разворачивается
-  const placeBubble=(b,sp,to,qb)=>{const w=b.offsetWidth,h=b.offsetHeight,[hx,hy]=headOf(sp);
-    const bodies=cast.filter(o=>inScene.has(o)).map(bodyOf).concat(reactBoxes());
-    const ob=bodyOf(sp),own={l:hx-22,r:hx+22,t:hy+14,b:ob.b},others_=cast.filter(o=>o!==sp&&inScene.has(o)).map(bodyOf); // своё тело ниже головы
-    const others=shown().filter(x=>x!==b),boxes=others.map(x=>({l:x._box.x-8,r:x._box.x+x._box.w+8,t:x._box.y-8,b:x._box.y+x._box.h+8}));
-    const tails=others.map(x=>x._tail).filter(Boolean);
-    const want=to?Math.atan2(headOf(to)[1]-hy,headOf(to)[0]-hx):Math.atan2(-1,(AW/2-hx)/Math.max(AW,1)*2);
-    const cand=[];
-    if(qb&&qb._box){const Q=qb._box;[Q.x+(Q.w-w)/2,Q.x,Q.x+Q.w-w].forEach(x=>cand.push({x,y:Q.y+Q.h+14,bonus:-90}))}
-    for(let k=0;k<16;k++){const ang=k*Math.PI/8,c=Math.cos(ang),s2=Math.sin(ang);
-      [34,60,95,150].forEach(d=>cand.push({x:hx+c*(d+w/2)-w/2,y:hy+s2*(d+h/2)-h/2,bonus:Math.abs(Math.atan2(Math.sin(ang-want),Math.cos(ang-want)))*70}))}
-    let best=null;
-    cand.forEach(c=>{const x=c.x,y=c.y;if(x<4||y<4||x+w>AW-4||y+h>AH-4)return;
-      const box={l:x-6,r:x+w+6,t:y-6,b:y+h+6};
-      if(bodies.some(r=>hits(box,r))||boxes.some(r=>hits(box,r)))return;
-      if(tails.some(t=>segHit(t[0],t[1],t[2],t[3],box)))return;                 // не ложиться на чужой хвост
-      const [,nx,ny]=tailBase(x,y,w,h,hx,hy),len=Math.hypot(hx-nx,hy-ny);
-      if(boxes.some(r=>segHit(nx,ny,hx,hy,r)))return;                           // свой хвост — не через чужие баблы
-      if(segHit(nx,ny,hx,hy,own)||others_.some(r=>segHit(nx,ny,hx,hy,r)))return;  // и не через своё тело, имя или чужих человечков
-      const cost=len+c.bonus;if(!best||cost<best.cost)best={x,y,cost,t:[nx,ny,hx,hy]}});
-    return best};
-  const putBubble=(b,sp,to,qb)=>{let best=placeBubble(b,sp,to,qb);
-    for(let k=0;k<4&&!best;k++){const old=shown().filter(x=>x!==b&&x!==qb)[0];if(!old)break;drop(old);best=placeBubble(b,sp,to,qb)} // места нет — уходит самое старое
-    if(!best){const [hx,hy]=headOf(sp);best={x:Math.max(4,Math.min(AW-b.offsetWidth-4,hx-b.offsetWidth/2)),y:Math.max(4,hy-b.offsetHeight-70),t:null}}
-    const w=b.offsetWidth,h=b.offsetHeight;b._box={x:best.x,y:best.y,w,h};b._tail=best.t;
-    b.style.left=best.x+'px';b.style.top=best.y+'px';wedge(b,best.x,best.y,w,h);updAvoid()};
-  const drop=b=>{b._box=null;b._tail=null;b.classList.remove('on');if(b._w)b._w.classList.remove('on');setTimeout(()=>{b.remove();if(b._w)b._w.remove()},400);updAvoid()};
-  const keep=L.map((l,i)=>Math.max(i+2,...L.map((x,k)=>x.to===i?k+1:-1)));
+    act.forEach(o=>{if(!o.lock&&inAvoid(o.tx,o.ty)){o.next=0;target(o)}})}; // кто шёл за облачко — разворачивается
+  const cols=new Map(),GAP=24,TAIL=30;
+  // ширина облачка — чтобы соседние столбики не наезжали друг на друга
+  const colW=o=>{const hx=headOf(o)[0],dx=Math.min(1e9,...cast.filter(c=>c!==o).map(c=>Math.abs(headOf(c)[0]-hx)));return Math.max(96,Math.min(220,dx-12,AW*.6))};
+  const layCol=(o,nb)=>{const list=cols.get(o)||[];const [hx,hy]=headOf(o);let y=hy-14-TAIL;
+    for(let k=list.length-1;k>=0;k--){const b=list[k],w=b.offsetWidth,h=b.offsetHeight;y-=h;
+      if(y<4){list.splice(0,k+1).forEach(drop);break}
+      const x=Math.max(4,Math.min(AW-w-4,hx-w/2));b._box={x,y,w,h};b._str=k<list.length-1?list[k+1]:null;b.style.left=x+'px';
+      if(b===nb){b.style.setProperty('transition','none','important');b.style.top=(y+18)+'px';void b.offsetTop;b.style.removeProperty('transition');
+        const yy=y;requestAnimationFrame(()=>{b.style.top=yy+'px'})} // новое всплывает снизу на своё место
+      else b.style.top=y+'px';
+      y-=GAP}
+    updAvoid()};
+  const putBubble=(b,o)=>{if(!cols.has(o))cols.set(o,[]);const list=cols.get(o);
+    while(list.length>=3)drop(list.shift());list.push(b);layCol(o,b);wedge(b,b._box.x,b._box.y+18,b._box.w,b._box.h)};
+  // уходит облачком: поднимается и тает
+  const drop=b=>{b._box=null;b._str=null;b._fly=true;b.style.top=(b.offsetTop-60)+'px';b.classList.remove('on');if(b._w)b._w.classList.remove('on');
+    cols.forEach(l=>{const i=l.indexOf(b);if(i>=0)l.splice(i,1)});setTimeout(()=>{b._fly=false;b.remove();if(b._w)b._w.remove()},1000);updAvoid()};
   // концовка «ванна»: говорившие уходят за край, потом коллаж — каждая в своей ванне, шушукаются
   const outro=()=>{at(1800,()=>{els.forEach(b=>{if(b._box)drop(b)});cast.forEach((o,k)=>{o.sp=.0004;o.tx=1.14;o.ty=.55+k*.08})});
-    at(4200,()=>{const C=document.createElement('div');C.className='tubs';els.push(C);
+    at(4200,()=>{const C=document.createElement('div');C.className='tubs';C.style.setProperty('--k',Math.min(1,(AW-16)/436).toFixed(3));els.push(C);
       const dark=new Set(T0.dark||[]),fr=cast.slice(0,2).map(o=>{const f=document.createElement('div');f.className='tubf'+(dark.has(o.name)?' dark':'');
         const g=document.createElement('div');g.className='fig';g.style.setProperty('--c',getComputedStyle(o.el).getPropertyValue('--c'));
         const sv=o.el.querySelector('svg').cloneNode(true);sv.removeAttribute('style');g.append(sv);
@@ -770,7 +773,6 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
       at(8000,()=>{C.classList.remove('on');setTimeout(()=>C.remove(),600)});
       at(8700,()=>{fin();done(3500)})})};
   const step=i=>{if(i>=L.length)return T0.end=='ванна'?outro():at(2200,()=>{fin();done(3500)});
-    L.forEach((_,k)=>{if(keep[k]===i&&live[k]&&live[k]._box)drop(live[k])});
     const l=L[i],q=l.to!=null?L[l.to]:null,to=q&&q.p!==l.p?q.p:null;
     enter(l.p);if(to)enter(to);
     l.R.forEach(r=>{if(cast.includes(r.p))enter(r.p)}); // реагирующий из диалога — встаёт на своё место
@@ -778,9 +780,8 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
     waitFor(()=>arrived(l.p),()=>{
       const b=document.createElement('div');b.className='tb';
       b.innerHTML='<span class="tx"></span>';b.querySelector('.tx').textContent=soft(l.say);
-      b._sp=l.p;A.append(b);live[i]=b;els.push(b);
-      const qb=q&&live[l.to]&&live[l.to]._box?live[l.to]:null;
-      putBubble(b,l.p,to||(q?q.p:null),qb);requestAnimationFrame(()=>{b.classList.add('on');if(b._w)b._w.classList.add('on')});
+      b._sp=l.p;b.style.maxWidth=colW(l.p)+'px';A.append(b);els.push(b);
+      putBubble(b,l.p);requestAnimationFrame(()=>{b.classList.add('on');if(b._w)b._w.classList.add('on')});
       l.p.el.classList.add('speaking');setTimeout(()=>l.p.el.classList.remove('speaking'),1600);
       l.R.forEach((r,j)=>at(1100+j*800,()=>{const h=Math.max(2500,ms-1100-j*800);
         // эмодзи — с той стороны головы, где нет баблов (справа, слева или сверху)
@@ -794,7 +795,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
         setTimeout(()=>{r.p.el.classList.remove('rxon');if(!inScene.has(r.p)){r.p.el.classList.remove('cast');if(fz){r.p.lock=false;r.p.next=0}}},h)}));
       at(ms,()=>step(i+1))},6000)};
   at(600,()=>step(0));
-  const fin=()=>{clearInterval(rewedge);calm=false;AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
+  const fin=()=>{alive=false;calm=false;AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
     A.classList.remove('scene-on');act.forEach(o=>o.el.classList.remove('rxon'));L.forEach(l=>l.R.forEach(r=>{if(!inScene.has(r.p))r.p.el.classList.remove('cast')}));
     cast.forEach(o=>{o.el.classList.remove('cast','named','speaking');o.sp=sp0.get(o)});release(cast);curScene=null};
   curScene={p:cast[0],stop:()=>{timers.forEach(clearTimeout);fin();zone=null;scene=false}}};
