@@ -205,7 +205,6 @@ body[data-v="1"] .b,body[data-v="2"] .b{border-radius:22px 16px 20px 14px}
     <section class="pl" id="pl" hidden aria-live="polite"><div class="plh"><button class="back" type="button">← все участники</button><p class="hello"></p></div><h3></h3><p class="empty">Сцен пока нет. Они появятся после созвонов.</p><ol></ol><button class="more" type="button" hidden></button></section>
     <div class="arena" id="arena"><div class="card" id="card" hidden></div></div>
   </div>
-  <p class="note" id="vdesc"></p>
 </div>
 <script>
 {
@@ -214,7 +213,6 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const QN={1:'верхний правый',2:'верхний левый',3:'нижний левый',4:'нижний правый'};
 const TN={1:'центральный резец',2:'боковой резец',3:'клык',4:'первый премоляр',5:'второй премоляр',6:'первый моляр',7:'второй моляр',8:'зуб мудрости'};
 const tname=f=>`${QN[f[0]]} ${TN[f[1]]}`, cap=s=>s[0].toUpperCase()+s.slice(1);
-const VD={1:'Как на листочке: тетрадь в линейку, карандаш, зубы и человечки чуть дрожат.',2:'Жёлтый блокнот: жёлтая линованная бумага с красным полем, как у американских студентов.'};
 /* по умолчанию разгрузочная версия: мат как есть. «Мягкая версия» — на всякий случай, для скриншотов */
 const SOFT=[[/охренел[а-яё]*/gi,'обалдели'],[/охренеть/gi,'ничего себе'],[/нахрен/gi,'к чёрту'],[/бля[а-яё]*/gi,'ох'],[/задолбал[а-яё]*/gi,'достали'],[/[а-яё]*ху[йеёия][а-яё]*/gi,'…'],[/[а-яё]*пизд[а-яё]*/gi,'…'],[/(?<![а-яё])(?:за|на|вы|от|отъ|по|у|до|раз|при)?[её]б[ауилнл][а-яё]*/gi,'…'],[/сук[аи]/gi,'…']];
 const soft=t=>$('#soft').checked?SOFT.reduce((s,[r,v])=>s.replace(r,v),t):t;
@@ -871,7 +869,7 @@ const start=d=>{DATA=d;
 fetch('data/live.json',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>d.people&&d.people.length?d:DEMO).catch(()=>DEMO).then(start);
 
 /* варианты */
-const setV=v=>{document.body.dataset.v=v;$('#vdesc').textContent=`Вариант ${v}. ${VD[v]}`;
+const setV=v=>{document.body.dataset.v=v;
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v))};
 const fromHash=()=>{const m=location.hash.match(/^#v([12])$/);setV(m?m[1]:'1')};
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){location.hash='v'+b.dataset.v}});
