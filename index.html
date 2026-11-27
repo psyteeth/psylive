@@ -305,14 +305,15 @@ const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
   p.el.style.setProperty('--s',s.toFixed(3));p.el.style.zIndex=p.el.classList.contains('talk')?300:Math.round(p.y*100);
   p.el.classList.toggle('r',p.side?p.side=='l':p.x*AW>Math.max(AW*.5,AW-230))}; // side: бабл раскрывается от триггера
 let last=performance.now();
+let calm=false; // идёт диалог: фон гуляет медленно и спокойно, без рывков («сабай-сабай»)
 const tick=t=>{const dt=Math.min(50,t-last);last=t;
   for(const p of P){
     if(p.orb&&t>=p.orb.t0){const o=p.orb,th=o.ph+(t-o.t0)*o.w; // плавное кружение по эллипсу, считается в каждом кадре
       p.x=p.tx=o.cx+o.R*Math.cos(th);p.y=p.ty=o.cy+o.r*Math.sin(th);p.moving=false;place(p);continue}
     const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
     if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
-    else if(d>.004){const v=Math.min(p.sp*dt*(!p.lock&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b||inAvoid(p.x,p.y))?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=dt;p.moving=true}
-    else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+800+Math.random()*3800;else if(t>p.next){p.next=0;target(p)}}}
+    else if(d>.004){const out=!p.lock&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b||inAvoid(p.x,p.y)),v=Math.min(p.sp*dt*(calm&&!p.lock?(out?.42:.3)*Math.min(1,.35+d/.05):out?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=calm&&!p.lock?dt*.5:dt;p.moving=true}
+    else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+(calm?4000+Math.random()*6000:800+Math.random()*3800);else if(t>p.next){p.next=0;target(p)}}}
     place(p)}
   requestAnimationFrame(tick)};
 
@@ -680,8 +681,9 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
   // центр сценки пустой: остальные бледнеют и ходят только по краям (сбоку, сверху или снизу от круга)
   {const xs=cast.map(o=>home.get(o)[0]),ys=cast.map(o=>home.get(o)[1]);
    zone={l:Math.max(0,Math.min(...xs)-.13),r:Math.min(1,Math.max(...xs)+.13),t:Math.max(0,Math.min(...ys)-.32),b:Math.min(.99,Math.max(...ys)+.06)};
-   act.filter(o=>!o.lock).forEach(o=>{o.next=0;target(o)})}
-  A.classList.add('scene-on');
+   const inZ=(x,y)=>x>zone.l&&x<zone.r&&y>zone.t&&y<zone.b; // уходят только те, кто в центре или идёт туда
+   act.filter(o=>!o.lock&&(inZ(o.x,o.y)||inZ(o.tx,o.ty))).forEach(o=>{o.next=0;target(o)})}
+  A.classList.add('scene-on');calm=true;
   const els=[],live=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms));
   // хвост-клин от бабла к голове говорящего: видно, кто говорит, даже если бабл сдвинут
   const WD=document.createElementNS('http://www.w3.org/2000/svg','svg');WD.setAttribute('class','wedges');A.append(WD);
@@ -786,7 +788,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
         setTimeout(()=>{r.p.el.classList.remove('rxon');if(!inScene.has(r.p)){r.p.el.classList.remove('cast');if(fz){r.p.lock=false;r.p.next=0}}},h)}));
       at(ms,()=>step(i+1))},6000)};
   at(600,()=>step(0));
-  const fin=()=>{clearInterval(rewedge);AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
+  const fin=()=>{clearInterval(rewedge);calm=false;AVOID=[];els.forEach(b=>{b._box=null;b.classList.remove('on');setTimeout(()=>b.remove(),400)});WD.style.opacity=0;setTimeout(()=>WD.remove(),400);
     A.classList.remove('scene-on');act.forEach(o=>o.el.classList.remove('rxon'));L.forEach(l=>l.R.forEach(r=>{if(!inScene.has(r.p))r.p.el.classList.remove('cast')}));
     cast.forEach(o=>{o.el.classList.remove('cast','named','speaking');o.sp=sp0.get(o)});release(cast);curScene=null};
   curScene={p:cast[0],stop:()=>{timers.forEach(clearTimeout);fin();zone=null;scene=false}}};
