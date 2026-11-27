@@ -124,6 +124,8 @@ body[data-v="1"] .hd,body[data-v="2"] .hd{fill:var(--bg);stroke:var(--c);stroke-
 .p.fighter .b{bottom:calc(84px*var(--s,1)*1.3 + 12px);transition:bottom .8s}.p.big.fighter .b{bottom:calc(84px*var(--s,1)*1.55 + 12px)}.p.fighter.small .b{bottom:calc(84px*var(--s,1)*.85 + 12px)}@media(max-width:600px){.p.fighter .b{max-width:44vw!important}}.p.fighter.small svg{transform:scale(calc(var(--s,1)*.85))!important}
 .scene-on .p:not(.cast):not(.old){opacity:.22;transition:opacity .8s}.p{transition:opacity .8s}
 .p.kick .nm{display:none!important}
+/* атака: необычный человечек (пунктирная голова), иногда прикрывается предметом */
+.p.attacker .hd{stroke-dasharray:3 2.4}.p.attacker .prop{font-size:34px}
 /* страница человека: он один и крупно, его зубы выделены, остальные приглушены */
 body.focus .p:not(.hero):not(.sad){display:none}
 .p.hero:not(.fighter) svg{transform:scale(calc(var(--s,1)*1.7))}.p.hero:not(.fighter) .nm{display:block;top:auto;bottom:-22px}
@@ -380,6 +382,8 @@ const FACE={
   'бешеный':'<path d="M11 6L18 9M29 6L22 9" style="stroke-width:2.8"/><circle cx="15.5" cy="12" r="2.8" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.3"/><circle cx="24.5" cy="12" r="2.8" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.3"/><circle cx="15.5" cy="12" r="1.2"/><circle cx="24.5" cy="12" r="1.2"/><path d="M13.5 21Q20 15 26.5 21L25 22Q20 18.5 15 22Z" style="fill:#1d1d1d"/>',
   'восторг':'<path d="M12 6L17 4.5M28 6L23 4.5"/><circle cx="16" cy="10.5" r="1.6"/><circle cx="24" cy="10.5" r="1.6"/><path class="open" d="M12.5 15Q20 27 27.5 15Z"/>',
   'растерянный':'<path d="M12 7L17 7M23 5L28 7"/><circle cx="16" cy="11.5" r="1.6"/><circle cx="24" cy="11.5" r="1.6"/><path d="M14 19Q16 17 18 19T22 19T26 19"/>',
+  'тревожный':'<path d="M12.5 8L17.5 6M27.5 8L22.5 6"/><circle cx="16" cy="11" r="2" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.1"/><circle cx="24" cy="11" r="2" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.1"/><circle cx="16" cy="11.3" r=".9"/><circle cx="24" cy="11.3" r=".9"/><path d="M15 19.5Q17 18 19 19.5T23 19.5T26 19"/>', // атака: беспокоится, прикрывается
+  'надменный':'<path d="M12.5 8.5H18M22 6.5L27.5 5"/><path d="M13.5 11.5H18.5M21.5 11.5H26.5"/><path d="M15 18.5Q21 20 26 16.5"/>', // атака: полуприкрытые глаза, бровь вверх, ухмылка
   'портал':'<path d="M12 6L17 5M28 6L23 5"/><circle cx="15.5" cy="12" r="3.4" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.4"/><circle cx="24.5" cy="12" r="3.4" style="fill:#fff;stroke:#1d1d1d;stroke-width:1.4"/><circle cx="15.5" cy="12.5" r="1.4"/><circle cx="24.5" cy="12.5" r="1.4"/><path d="M13 22.5Q20 16 27 22.5"/>'};
 const GLASSES='<path class="glass" d="M10.5 9.5h8v4.6q0 1.6-1.6 1.6h-4.8q-1.6 0-1.6-1.6zM21.5 9.5h8v4.6q0 1.6-1.6 1.6h-4.8q-1.6 0-1.6-1.6z"/><path d="M18.5 11h3"/><path d="M14.5 18.5Q20 22.5 25.5 18.5"/>';
 const setFace=(p,code,glasses)=>{const g=p.el.querySelector('.face');if(g)g.innerHTML=glasses?GLASSES:(FACE[code||'база']||'')};
@@ -623,9 +627,11 @@ const storiesOf=p=>(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]===p);
 let dirT=0,focus=null,fT=null,queue=[],plOpen=false;
 const kick=ms=>{clearTimeout(dirT);dirT=setTimeout(director,ms)};
 const PL=$('#pl');
-const teethOf=p=>[...new Set([...p.teeth,...storiesOf(p).map(c=>c[11]).filter(Boolean)])].sort();
-const sceneTitle=c=>{const r=cap(c[1]||'адресат');return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
-const plList=()=>storiesOf(focus).filter(c=>!fT||c[11]===fT);
+const isAtk=c=>!Array.isArray(c),toothOfScene=c=>isAtk(c)?String(c.tooth||''):c[11];
+const scenesOf=p=>[...storiesOf(p),...ATK.filter(a=>a.who===p.name)]; // истории с триггером и атаки
+const teethOf=p=>[...new Set([...p.teeth,...scenesOf(p).map(toothOfScene).filter(Boolean)])].sort();
+const sceneTitle=c=>{if(isAtk(c))return `Атака${c.role?' · '+c.role:''}: «${atkText(c)}»`;const r=cap(c[1]||'адресат');return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
+const plList=()=>scenesOf(focus).filter(c=>!fT||toothOfScene(c)===fT);
 const plRender=()=>{const L=plList(),shown=plOpen?L:L.slice(0,10);
   PL.querySelector('.hello').textContent=greet(focus);
   PL.querySelector('h3').textContent=fT?`Сцены из жизни по ${fT} зубу`:'Сцены из жизни';
@@ -638,7 +644,7 @@ const markTeeth=()=>{const mine=focus?new Set(teethOf(focus)):null;
   document.querySelectorAll('.tooth').forEach(g=>{const f=g.dataset.f;g.classList.toggle('mine',!!mine&&mine.has(f));g.classList.toggle('off',!!mine&&!mine.has(f));
     g.classList.toggle('sel',focus?f===fT:f===sel)})};
 const playNext=()=>{if(!focus||!queue.length)return plRender();const c=queue.shift();
-  if(curScene)curScene.stop();scene=true;storyScene(c,()=>{scene=false;if(focus)setTimeout(playNext,1500)});curScene.c=c;plRender()};
+  if(curScene)curScene.stop();scene=true;(isAtk(c)?attackScene:storyScene)(c,()=>{scene=false;if(focus)setTimeout(playNext,1500)});if(curScene)curScene.c=c;plRender()};
 const playFrom=k=>{queue=plList().slice(k);playNext();if(innerWidth<900)A.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'})}; // на телефоне список над листом: прокручиваем к сцене
 const enterFocus=p=>{if(curScene)curScene.stop();scene=false;clearTimeout(dirT);queue=[];
   if(focus)focus.el.classList.remove('hero');
@@ -780,13 +786,53 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
     A.classList.remove('scene-on');act.forEach(o=>o.el.classList.remove('rxon'));L.forEach(l=>l.R.forEach(r=>{if(!inScene.has(r.p))r.p.el.classList.remove('cast')}));
     cast.forEach(o=>{o.el.classList.remove('cast','named','speaking');o.sp=sp0.get(o)});release(cast);curScene=null};
   curScene={p:cast[0],stop:()=>{timers.forEach(clearTimeout);fin();zone=null;scene=false}}};
+/* Атака (data/attacks.json): {who, tooth, role, face, prop, say}. Приходит необычный человечек с лицом face,
+   ищет в толпе участника who (подходит к паре других, приглядывается), находит и говорит ему фразу say.
+   {имя} во фразе — ник участника. Пока звучит фраза, у участника на карте пульсирует зуб tooth. */
+let ATK=[];
+fetch('data/attacks.json',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(t=>{ATK=Array.isArray(t)?t.filter(a=>a&&a.who&&a.say):[]}).catch(()=>{});
+const atkText=a=>String(a.say).replace(/\{имя\}/g,a.who);
+const attackScene=(A0,done)=>{const p=byNick(A0.who);if(!p||p.lock&&!focus)return done(300);
+  const timers=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms)),sp0=p.sp;let blink=null,ended=false;
+  const fromL=p.x>.5; // приходит с дальней от участника стороны, через толпу
+  const s=mk({n:A0.role||'',g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big','fighter','attacker');setFace(s,A0.face||'злой');
+  if(A0.prop){const sv=s.el.querySelector('svg'),tx=document.createElementNS('http://www.w3.org/2000/svg','text');
+    tx.setAttribute('class','prop');tx.setAttribute('x','20');tx.setAttribute('y','62');tx.setAttribute('text-anchor','middle');tx.textContent=A0.prop;sv.append(tx)} // прикрывается: предмет перед телом
+  s.x=fromL?-.06:1.06;s.y=s.ty=.55;s.tx=s.x;s.sp=.00016;P.push(s);
+  const near=o=>Math.hypot((o.x-s.x)*AW,(o.y-s.y)*AH)<60;
+  // 1. ищет: подходит к одному-двум другим, приглядывается — не тот
+  const look=focus?[]:act.filter(o=>o!==p&&!o.lock&&!o.old).sort(()=>Math.random()-.5).slice(0,2);
+  const go=(k)=>{if(ended)return;
+    if(k<look.length){const o=look[k];s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;
+      const chk=()=>{if(ended)return;if(near(o)||Math.hypot(s.tx-s.x,s.ty-s.y)<.01){setFace(s,A0.face||'злой');at(1400,()=>go(k+1))}else{s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;at(200,chk)}};at(200,chk);return}
+    // 2. нашёл: идёт к участнику, тот замирает
+    const chk=()=>{if(ended)return;const side=s.x<p.x?'l':'r',gap=Math.max(.09,85/Math.max(AW,1));
+      s.tx=Math.max(.06,Math.min(.94,p.x+(side=='l'?-gap:gap)));s.ty=p.y;
+      if(Math.hypot((s.x-p.x)*AW,(s.y-p.y)*AH)<260&&!p.lock){p.lock=true;p.tx=p.x;p.ty=p.y}
+      if(Math.hypot(s.tx-s.x,s.ty-s.y)<.008)return meet(side);at(200,chk)};
+    s.sp=.0002;chk()};
+  const meet=side=>{if(ended)return;s.side=side;p.side=side=='l'?'r':'l'; // баблы раскрываются наружу
+    A.classList.add('scene-on');s.el.classList.add('cast');p.el.classList.add('cast','fighter');setFace(p,'растерянный');
+    clear([p,s],(p.x+s.x)/2,p.y);
+    const txt=atkText(A0),ms=readMs(txt,'dialog')+2500;
+    at(900,()=>{say(s,txt,ms,'');if(A0.tooth){flashTooth(A0.tooth);blink=setInterval(()=>flashTooth(A0.tooth),2100)}});
+    at(900+ms*.4,()=>setFace(p,'грустный'));
+    at(900+ms+300,()=>{clearInterval(blink);s.sp=.00016;s.tx=side=='l'?-.14:1.14});
+    at(900+ms+1200,wrap);at(900+ms+4800,()=>{fin();done(3000)})};
+  const wrap=()=>{clearInterval(blink);A.classList.remove('scene-on');p.el.classList.remove('cast','fighter','talk');p.side=null;p.sp=sp0;setFace(p,'');s.el.classList.remove('cast');release([p])};
+  const fin=()=>{ended=true;curScene=null;s.el.remove();if(P.includes(s))P.splice(P.indexOf(s),1)};
+  go(0);
+  curScene={p,stop:()=>{timers.forEach(clearTimeout);wrap();fin();zone=null;scene=false}}};
 const director=()=>{if(scene||focus)return kick(2000); // на странице человека сцены идут только из его плейлиста
   const list=(DATA.comm||[]).filter(c=>isStory(c)&&P[c[0]]&&!P[c[0]].old&&!P[c[0]].lock&&(!sel||P[c[0]].hi));
   const talk=TALK.filter(t=>{const L=talkLines(t);return L.length&&L.every(l=>l.p&&!l.p.lock)&&(!sel||L.some(l=>l.p.hi))});
-  if(!list.length&&!talk.length)return kick(4000);
+  const atk=ATK.filter(a=>{const p=byNick(a.who);return p&&!p.lock&&(!sel||p.hi)});
+  if(!list.length&&!talk.length&&!atk.length)return kick(4000);
   scene=true;const fin=pause=>{scene=false;kick(pause+4000+Math.random()*4000)};
-  // истории главные; реплики — в паузах между ними (если историй нет — только реплики)
-  if(list.length&&(!talk.length||Math.random()<.5))storyScene(rnd(list),fin);else talkScene(rnd(talk),fin)};
+  // истории главные; атаки и реплики — в паузах между ними
+  const r=Math.random();
+  if(atk.length&&(r<.3||!list.length&&!talk.length))attackScene(rnd(atk),fin);
+  else if(list.length&&(!talk.length||r<.65))storyScene(rnd(list),fin);else if(talk.length)talkScene(rnd(talk),fin);else attackScene(rnd(atk),fin)};
 
 /* выбор зуба */
 const info=()=>{const I=$('#info');I.textContent='';
