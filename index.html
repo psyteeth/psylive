@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Психостоматология вживую</title>
+<title>Психостоматология №1 LIVE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Neucha&family=Manrope:wght@500;700&display=swap">
 <style>
@@ -70,7 +70,6 @@ body[data-v="1"] .hd,body[data-v="2"] .hd{fill:var(--bg);stroke:var(--c);stroke-
 .p.hi svg{filter:drop-shadow(0 0 5px var(--acc)) drop-shadow(0 0 2px var(--acc))}
 .p.old{opacity:var(--op,.3);filter:grayscale(1);pointer-events:none}
 .p.dim{opacity:.13}
-.noold .p.old{display:none}
 .b{display:none;position:absolute;left:50%;bottom:calc(84px*var(--s,1) + 12px);transform:translateX(-24px);width:max-content;max-width:200px;padding:7px 11px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:16px;font-size:14px;line-height:1.25;z-index:2}
 .b::after{content:"";position:absolute;left:14px;bottom:-8px;width:12px;height:12px;background:var(--bub);border-right:2px solid var(--bubl);border-bottom:2px solid var(--bubl);transform:rotate(45deg)}
 .r .b{transform:translateX(calc(-100% + 24px))}.r .b::after{left:auto;right:14px}
@@ -189,14 +188,13 @@ body[data-v="1"] .b,body[data-v="2"] .b{border-radius:22px 16px 20px 14px}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter></svg>
 <div class="wrap">
   <header class="top">
-    <div style="display:grid;gap:4px"><h1>Психостоматология вживую</h1><p class="sub" id="cnt"></p></div>
+    <div style="display:grid;gap:4px"><h1>Психостоматология №1 LIVE</h1><p class="sub" id="cnt"></p></div>
     <div class="tabs" role="tablist" aria-label="Вариант дизайна" id="tabs">
       <button role="tab" data-v="1">1 · Блокнот</button><button role="tab" data-v="2">2 · Жёлтый блокнот</button>
     </div>
   </header>
   <div class="ctrl">
-    <label for="old"><input type="checkbox" id="old" checked> старые студенты</label>
-    <label for="soft"><input type="checkbox" id="soft"> мягкая версия (без мата)</label>
+    <label for="soft"><input type="checkbox" id="soft"> заглушить мат</label>
     <button id="all" type="button">показать всех</button>
   </div>
   <p class="info" id="info" aria-live="polite"></p>
@@ -882,7 +880,6 @@ const setV=v=>{document.body.dataset.v=v;
 const fromHash=()=>{const m=location.hash.match(/^#v([12])$/);setV(m?m[1]:'1')};
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){location.hash='v'+b.dataset.v}});
 addEventListener('hashchange',fromHash);fromHash();
-$('#old').addEventListener('change',e=>document.body.classList.toggle('noold',!e.target.checked));
 }
 </script>
 </body>
