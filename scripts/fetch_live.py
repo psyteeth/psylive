@@ -128,12 +128,15 @@ def clean(raw, pools):
     out_c = []
     for i, c in enumerate(comm):
         w = f"comm[{i}]"
-        if not isinstance(c, list) or len(c) not in (12, 15):
-            raise Bad(f"{w}: ожидается 12 или 15 полей")
+        if not isinstance(c, list) or len(c) not in (12, 15, 16):
+            raise Bad(f"{w}: ожидается 12, 15 или 16 полей")
         who, role, f0, said, a, fa, aa, faa, b, fb, portal, tooth = c[:12]
         ra, rb, chain = (c[12], c[13], c[14]) if len(c) == 15 else ("", "", [])
         if not isinstance(chain, list) or len(chain) > 8:
             raise Bad(f"{w}: продолжение_Б")
+        intro = c[15] if len(c) == 16 else []
+        if not isinstance(intro, list) or len(intro) > 4:
+            raise Bad(f"{w}: до_триггера")
         if not isinstance(who, int) or isinstance(who, bool) or not 0 <= who < len(out_people):
             raise Bad(f"{w}: номер человека")
         if not isinstance(role, str) or not re.fullmatch(r"[а-яё -]{0,30}", role):
@@ -144,7 +147,7 @@ def clean(raw, pools):
             raise Bad(f"{w}: портал или зуб")
         t = lambda x: "" if x == "" else text_ok(x, 230, w)
         out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth,
-                      t(ra), t(rb), [text_ok(x, 230, w) for x in chain]])
+                      t(ra), t(rb), [text_ok(x, 230, w) for x in chain], [text_ok(x, 230, w) for x in intro]])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")

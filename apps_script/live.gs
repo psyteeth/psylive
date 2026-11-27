@@ -790,9 +790,11 @@ function buildLive_(inp, nowMs, salt, hash) {
       // «продолжение_Б» — реплики через « / », по очереди адресат и участник
       var ra = txt(cell(r, 'реакция_после_А')), rb = txt(cell(r, 'реакция_после_Б'));
       var chain = cell(r, 'продолжение_Б').split(/\s*\/\s*|\n+/).map(function (x) { return txt(x.trim()); });
-      if (ra === null || rb === null || chain.some(function (x) { return x === null; })) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
+      // «до_триггера» — начало сценки до прихода адресата: «улыбается / Чё-то поныть хочется»
+      var intro = cell(r, 'до_триггера').split(/\s*\/\s*|\n+/).map(function (x) { return txt(x.trim()); });
+      if (ra === null || rb === null || chain.some(function (x) { return x === null; }) || intro.some(function (x) { return x === null; })) { debug.reportMiss.push('коммуникация не прошла фильтр: ' + cell(r, 'дата') + ' ' + cell(r, 'адресат_роль')); return; }
       comm.push([idx.get(p), role, face(cell(r, 'лицо_адресата')), said, a, face(cell(r, 'лицо_после_А')), aa, face(cell(r, 'лицо_после_АА')),
-        b, face(cell(r, 'лицо_после_Б')), cell(r, 'портал').toLowerCase() === 'да', tooth, ra, rb, chain.filter(Boolean).slice(0, 8)]);
+        b, face(cell(r, 'лицо_после_Б')), cell(r, 'портал').toLowerCase() === 'да', tooth, ra, rb, chain.filter(Boolean).slice(0, 8), intro.filter(Boolean).slice(0, 4)]);
     });
     stats.comm = comm.length;
   }

@@ -281,6 +281,12 @@ let AVOID=[];
 const figBox=(x,y)=>{const sc=(.5+.55*y)*(AW<520?.8:1),fy=104+y*(AH-118);return {l:x*AW-22,r:x*AW+22,t:fy-84*sc-6,b:fy+4}};
 const hits=(a,b)=>a.l<b.r&&b.l<a.r&&a.t<b.b&&b.t<a.b;
 const inAvoid=(x,y)=>{if(!AVOID.length)return false;const f=figBox(x,y);return AVOID.some(r=>hits(f,r))};
+/* триггер (большой грустнолицый) приходит за кем-то одним: толпа заранее спокойно расходится с его пути
+   и в него не заходит. Путь — отрезок от того места, где он стоит, до того, куда он идёт */
+const TRIG=()=>P.filter(o=>o.sad&&o.lock&&o.el.classList.contains('big'));
+const segPx=(x,y,s)=>{const k=AW,m=Math.max(1,AH-118),ax=s.x*k,ay=s.y*m,bx=s.tx*k,by=s.ty*m,px=x*k,py=y*m,
+  vx=bx-ax,vy=by-ay,L=vx*vx+vy*vy,u=L?Math.max(0,Math.min(1,((px-ax)*vx+(py-ay)*vy)/L)):0;return Math.hypot(px-ax-u*vx,(py-ay-u*vy)*1.6)};
+const nearTrig=(x,y,p)=>TRIG().some(s=>s.look!==p&&segPx(x,y,s)<150);
 const candidate=p=>{
   let x=.04+Math.random()*.92,y=sel?(p.hi?.72+Math.random()*.26:.22+Math.random()*.3):.25+Math.random()*.72;
   if(zone){ // остаёмся со своей стороны зоны, чтобы не идти сквозь неё
@@ -292,12 +298,13 @@ const candidate=p=>{
   }
   return {x,y}};
 /* человечки выбирают место подальше от других, чтобы не толпиться */
-const target=p=>{if(p.lock)return;let best=null,bd=-1;
-  for(let k=0;k<(AVOID.length?20:7);k++){const c=candidate(p);if(inAvoid(c.x,c.y)||AVOID.length&&[.2,.4,.6,.8].some(f=>inAvoid(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f)))continue;let d=1e9; // ни точка, ни путь к ней — не за баблом
+const target=p=>{if(p.lock)return;let best=null,bd=-1;const tg=TRIG().length;
+  for(let k=0;k<(AVOID.length||tg?20:7);k++){const c=candidate(p);if(inAvoid(c.x,c.y)||AVOID.length&&[.2,.4,.6,.8].some(f=>inAvoid(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f)))continue;
+    if(tg&&[0,.25,.5,.75,1].some(f=>nearTrig(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f,p)))continue;let d=1e9; // и не через триггера: // ни точка, ни путь к ней — не за баблом
     if(chase&&p!==chase.p&&!p.old)d=Math.hypot((chase.p.x-c.x)*AW,(chase.p.y-c.y)*AH); // убегаем от того, кто выебнулся
     else for(const o of P){if(o===p||o.old||o.bot||o.sad)continue;d=Math.min(d,Math.hypot((o.tx-c.x)*AW,(o.ty-c.y)*AH*.7),Math.hypot((o.x-c.x)*AW,(o.y-c.y)*AH*.7))}
     if(d>bd){bd=d;best=c}}
-  if(!best)best=candidate(p);
+  if(!best){const s=tg&&TRIG()[0];best=s?{x:s.x<.5?.78+Math.random()*.18:.04+Math.random()*.18,y:s.y<.6?.82+Math.random()*.14:.25+Math.random()*.15}:candidate(p)}
   p.tx=best.x;p.ty=best.y};
 const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
   const fy=104+p.y*(AH-118),bob=p.moving&&!RM?Math.abs(Math.sin(p.walk/110))*3:0;
@@ -306,7 +313,9 @@ const place=p=>{const s=(.5+.55*p.y)*(p.old?.7:1)*(AW<520?.8:1);
   p.el.classList.toggle('r',p.side?p.side=='l':p.x*AW>Math.max(AW*.5,AW-230))}; // side: бабл раскрывается от триггера
 let last=performance.now();
 let calm=false; // идёт диалог: фон гуляет медленно и спокойно, без рывков («сабай-сабай»)
+let trigChk=0;
 const tick=t=>{const dt=Math.min(50,t-last);last=t;
+  if(t>trigChk){trigChk=t+250;if(TRIG().length)for(const p of P)if(!p.lock&&!p.sad&&!p.bot&&nearTrig(p.tx,p.ty,p)){p.next=0;target(p)}} // стоит на пути триггера — спокойно отходит
   for(const p of P){
     if(p.orb&&t>=p.orb.t0){const o=p.orb,th=o.ph+(t-o.t0)*o.w; // плавное кружение по эллипсу, считается в каждом кадре
       p.x=p.tx=o.cx+o.R*Math.cos(th);p.y=p.ty=o.cy+o.r*Math.sin(th);p.moving=false;place(p);continue}
@@ -455,7 +464,7 @@ const throwToy=(p,k)=>{const el=document.createElement('div');el.className='toy'
   el.style.transform=`translate(${x0}px,${y0-60}px)`;A.append(el);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transform=`translate(${x1-11}px,${y1-22}px) rotate(${(Math.random()<.5?-1:1)*(360+Math.random()*360|0)}deg)`}));
   return el};
-const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=C,p=P[i],chain=C[14]||[];
+const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]=C,p=P[i],chain=C[14]||[],intro=C[15]||[];
   const side=Math.random()<.5?'l':'r',narrow=AW<600,cx=side=='l'?(narrow?.84:.64):(narrow?.16:.36),cy=.58;
   const sp0=p.sp,toys=[],timers=[];let run=null,blink=null;
   let t=0;const at=(ms,fn)=>timers.push(setTimeout(fn,ms)),wait=ms=>{t+=ms},
@@ -471,8 +480,18 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
   const L=side=='l'?Math.max(.02,cx-.5):cx-.12,Rr=side=='l'?cx+.12:Math.min(.98,cx+.5);
   clear([p],cx,cy);zone={l:L,r:Rr,t:0,b:Math.min(.98,cy+.26)};act.filter(o=>!o.lock).forEach(o=>{o.next=0;target(o)});
   const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big','fighter','cast');setFace(s,'улыбка');
-  s.side=side=='l'?'r':'l';s.x=side=='l'?1.06:-.06;s.y=s.ty=cy;s.tx=cx;s.sp=.0002;P.push(s);
+  s.side=side=='l'?'r':'l';s.x=side=='l'?1.06:-.06;s.y=s.ty=cy;s.tx=intro.length?s.x:cx;s.sp=.0002;P.push(s);
   const hd=s.el.querySelector('.hd');
+  // 1б. «до_триггера»: участник один, до прихода триггера («гуляет / Чё-то поныть хочется»)
+  if(intro.length){wait(2600);
+    intro.forEach(x=>{
+      if(!isAct(x))return line(p,x,'');
+      const walk=/гуля|ход|выход|бега|броди|идёт|идет/i.test(x);
+      at(t,()=>{setFace(p,/груст|ноет|скуча|печал/i.test(x)?'грустный':/весел|радост|смеёт|смеет|танцу/i.test(x)?'восторг':'улыбка');
+        if(walk)for(let k=0;k<3;k++)timers.push(setTimeout(()=>{p.sp=.00012;p.tx=cx+(side=='l'?-.16:.16)+(Math.random()-.5)*.18;p.ty=cy-.06+Math.random()*.12},k*1200))});
+      wait(3400)});
+    at(t,()=>{s.tx=cx;p.tx=cx+(side=='l'?-.16:.16);p.ty=cy});
+  }
   wait(3600);
   at(t,()=>setFace(s,f0||'злой'));
   if(isAct(said))wait(2600);else line(s,said,'');
@@ -827,9 +846,10 @@ const attackScene=(A0,done)=>{const p=byNick(A0.who);if(!p||p.lock&&!focus)retur
   // 1. ищет: подходит к одному-двум другим, приглядывается — не тот
   const look=focus?[]:act.filter(o=>o!==p&&!o.lock&&!o.old).sort(()=>Math.random()-.5).slice(0,2);
   const go=(k)=>{if(ended)return;
-    if(k<look.length){const o=look[k];s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;
+    if(k<look.length){const o=look[k];s.look=o;s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;
       const chk=()=>{if(ended)return;if(near(o)||Math.hypot(s.tx-s.x,s.ty-s.y)<.01){setFace(s,A0.face||'злой');at(1400,()=>go(k+1))}else{s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;at(200,chk)}};at(200,chk);return}
     // 2. нашёл: идёт к участнику, тот замирает
+    s.look=p;
     const chk=()=>{if(ended)return;const side=s.x<p.x?'l':'r',gap=Math.max(.09,85/Math.max(AW,1));
       s.tx=Math.max(.06,Math.min(.94,p.x+(side=='l'?-gap:gap)));s.ty=p.y;
       if(Math.hypot((s.x-p.x)*AW,(s.y-p.y)*AH)<260&&!p.lock){p.lock=true;p.tx=p.x;p.ty=p.y}
