@@ -812,13 +812,13 @@ const attackScene=(A0,done)=>{const p=byNick(A0.who);if(!p||p.lock&&!focus)retur
       if(Math.hypot(s.tx-s.x,s.ty-s.y)<.008)return meet(side);at(200,chk)};
     s.sp=.0002;chk()};
   const meet=side=>{if(ended)return;s.side=side;p.side=side=='l'?'r':'l'; // баблы раскрываются наружу
-    A.classList.add('scene-on');s.el.classList.add('cast');p.el.classList.add('cast','fighter');setFace(p,'растерянный');
+    A.classList.add('scene-on');s.el.classList.add('cast');p.el.classList.add('cast','fighter');
     clear([p,s],(p.x+s.x)/2,p.y);
     const txt=atkText(A0),ms=readMs(txt,'dialog')+2500;
-    at(900,()=>{say(s,txt,ms,'');if(A0.tooth){flashTooth(A0.tooth);blink=setInterval(()=>flashTooth(A0.tooth),2100)}});
-    at(900+ms*.4,()=>setFace(p,'грустный'));
+    // с первого слова атаки и до конца сценки участник грустный, потом снова обычный смайлик
+    at(900,()=>{setFace(p,'грустный');say(s,txt,ms,'');if(A0.tooth){flashTooth(A0.tooth);blink=setInterval(()=>flashTooth(A0.tooth),2100)}});
     at(900+ms+300,()=>{clearInterval(blink);s.sp=.00016;s.tx=side=='l'?-.14:1.14});
-    at(900+ms+1200,wrap);at(900+ms+4800,()=>{fin();done(3000)})};
+    at(900+ms+3800,wrap);at(900+ms+4800,()=>{fin();done(3000)})};
   const wrap=()=>{clearInterval(blink);A.classList.remove('scene-on');p.el.classList.remove('cast','fighter','talk');p.side=null;p.sp=sp0;setFace(p,'');s.el.classList.remove('cast');release([p])};
   const fin=()=>{ended=true;curScene=null;s.el.remove();if(P.includes(s))P.splice(P.indexOf(s),1)};
   go(0);
