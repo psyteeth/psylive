@@ -147,6 +147,18 @@ body.focus .info{display:none}
 .tb{position:absolute;left:0;top:0;width:max-content;max-width:min(220px,44vw);padding:7px 11px;background:var(--bub);color:var(--bubi);border:2px solid var(--bubl);border-radius:16px;font-size:14px;line-height:1.25;z-index:360;pointer-events:none;opacity:0;transform:translateY(8px) scale(.96);transition:opacity .3s,transform .3s,top .35s,left .35s}
 body[data-v="1"] .tb,body[data-v="2"] .tb{border-radius:22px 16px 20px 14px}
 .tb.on{opacity:1;transform:none}
+/* коллаж «в ванной»: две рамки-карточки, в каждой своя ванна */
+.tubs{position:absolute;left:50%;top:52%;display:flex;gap:22px;z-index:420;opacity:0;transform:translate(-50%,-50%) scale(.92);transition:opacity .5s,transform .5s;pointer-events:none}
+.tubs.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.tubf{position:relative;width:200px;height:156px;background:var(--bg,#fffdf6);border:2px solid var(--fig);border-radius:6px;box-shadow:3px 4px 0 rgba(0,0,0,.12);overflow:hidden}
+.tubf:nth-child(1){rotate:-3deg}.tubf:nth-child(2){rotate:2.5deg}
+.tubf .fig{position:absolute;left:60px;top:52px;width:40px;height:36px;overflow:hidden;rotate:-14deg;scale:1.3;transform-origin:50% 40%}.tubf .fig svg{width:40px;height:84px;overflow:visible;display:block}
+.tubf .tub{position:absolute;inset:0;width:100%;height:100%}
+.tubf .tb2{fill:#fff;stroke:var(--fig);stroke-width:3;stroke-linejoin:round}.tubf .tl,.tubf .tp{fill:none;stroke:var(--fig);stroke-width:3;stroke-linecap:round}
+.tubf .fm circle{fill:#fff;stroke:#9fc3d6;stroke-width:2}
+.tubf .shu{position:absolute;top:12px;left:16px;padding:4px 9px;font-size:13px;font-weight:600;background:#fff;color:#222;border:2px solid var(--fig);border-radius:12px;opacity:0;transition:opacity .25s}.tubf .shu.on{opacity:1}
+.tubf .nm2{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:12px;font-weight:700;color:var(--fig)}
+.tubf.dark{background:#24242c}.tubf.dark .tb2{fill:#3a3a46;stroke:#9a9aa8}.tubf.dark .tl,.tubf.dark .tp{stroke:#9a9aa8}.tubf.dark .fm circle{fill:#4a4a58;stroke:#6a6a7a}.tubf.dark .nm2{color:#ccc}.tubf.dark .fig{filter:brightness(.75)}
 .wedges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:359;transition:opacity .4s}
 .wedges path{fill:var(--bub);stroke:var(--bubl);stroke-width:2;stroke-linejoin:round;opacity:0;transition:opacity .3s,d .35s}.wedges path.on{opacity:1} /* бабл с хвостом к голове говорящего — одним контуром */
 .tb{background:transparent!important;border-color:transparent!important;transition:opacity .3s!important;transform:none!important} /* без переезда: текст и контур двигаются вместе */ /* сам контур рисует svg, текст поверх */
@@ -726,7 +738,20 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
     b.style.left=best.x+'px';b.style.top=best.y+'px';wedge(b,best.x,best.y,w,h);updAvoid()};
   const drop=b=>{b._box=null;b._tail=null;b.classList.remove('on');if(b._w)b._w.classList.remove('on');setTimeout(()=>{b.remove();if(b._w)b._w.remove()},400);updAvoid()};
   const keep=L.map((l,i)=>Math.max(i+2,...L.map((x,k)=>x.to===i?k+1:-1)));
-  const step=i=>{if(i>=L.length)return at(2200,()=>{fin();done(3500)});
+  // концовка «ванна»: говорившие уходят за край, потом коллаж — каждая в своей ванне, шушукаются
+  const outro=()=>{at(1800,()=>{els.forEach(b=>{if(b._box)drop(b)});cast.forEach((o,k)=>{o.sp=.0004;o.tx=1.14;o.ty=.55+k*.08})});
+    at(4200,()=>{const C=document.createElement('div');C.className='tubs';els.push(C);
+      const dark=new Set(T0.dark||[]),fr=cast.slice(0,2).map(o=>{const f=document.createElement('div');f.className='tubf'+(dark.has(o.name)?' dark':'');
+        const g=document.createElement('div');g.className='fig';g.style.setProperty('--c',getComputedStyle(o.el).getPropertyValue('--c'));
+        const sv=o.el.querySelector('svg').cloneNode(true);sv.removeAttribute('style');g.append(sv);
+        f.innerHTML='<svg class="tub" viewBox="0 0 200 150" aria-hidden="true"><path class="tp" d="M168 80V44q0-10-10-10h-12"/><path class="tl" d="M54 126l-7 14M146 126l7 14"/><path class="tb2" d="M22 80H178Q178 126 130 126H70Q22 126 22 80Z"/><g class="fm"><circle cx="40" cy="80" r="9"/><circle cx="56" cy="76" r="8"/><circle cx="104" cy="77" r="9"/><circle cx="122" cy="80" r="8"/><circle cx="140" cy="76" r="9"/><circle cx="158" cy="80" r="7"/></g></svg><span class="shu"></span><span class="nm2"></span>';
+        f.prepend(g);f.querySelector('.nm2').textContent=o.name;C.append(f);return f});
+      A.append(C);requestAnimationFrame(()=>C.classList.add('on'));
+      const W=['шу-шу','пс-пс','хи-хи','шу-шу-шу','пс…'];
+      for(let k=0;k<7;k++)at(700+k*1000,()=>{fr.forEach((f,j)=>f.querySelector('.shu').classList.toggle('on',j==k%fr.length));const s=fr[k%fr.length].querySelector('.shu');s.textContent=W[k%W.length]});
+      at(8000,()=>{C.classList.remove('on');setTimeout(()=>C.remove(),600)});
+      at(8700,()=>{fin();done(3500)})})};
+  const step=i=>{if(i>=L.length)return T0.end=='ванна'?outro():at(2200,()=>{fin();done(3500)});
     L.forEach((_,k)=>{if(keep[k]===i&&live[k]&&live[k]._box)drop(live[k])});
     const l=L[i],q=l.to!=null?L[l.to]:null,to=q&&q.p!==l.p?q.p:null;
     enter(l.p);if(to)enter(to);
