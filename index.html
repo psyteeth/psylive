@@ -287,7 +287,8 @@ const candidate=p=>{
     const roomL=zone.l-.04,roomR=.96-zone.r,leftSide=p.x<(zone.l+zone.r)/2;
     if(leftSide&&roomL>.06||!leftSide&&roomR<=.06&&roomL>.06)x=.04+Math.random()*roomL;
     else if(roomR>.06)x=zone.r+Math.random()*roomR;
-    else y=zone.b+Math.random()*Math.max(.02,.98-zone.b); // по бокам места нет: встаём спереди
+    else if(zone.b>.95||zone.t>.3&&Math.random()<.5)y=.22+Math.random()*Math.max(.06,zone.t-.22); // по бокам места нет: сверху,
+    else y=zone.b+Math.random()*Math.max(.02,.98-zone.b); // …или спереди
   }
   return {x,y}};
 /* человечки выбирают место подальше от других, чтобы не толпиться */
@@ -676,7 +677,10 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
   if(cast.some(o=>o.lock))return done(300);
   const n=cast.length,timers=[],home=new Map(),sp0=new Map(),inScene=new Set();
   cast.forEach((o,k)=>{home.set(o,SPOTS[n][k]);sp0.set(o,o.sp)}); // участники гуляют, пока их не позовут говорить
-  zone=null; // остальные просто бледнеют и гуляют на заднем плане
+  // центр сценки пустой: остальные бледнеют и ходят только по краям (сбоку, сверху или снизу от круга)
+  {const xs=cast.map(o=>home.get(o)[0]),ys=cast.map(o=>home.get(o)[1]);
+   zone={l:Math.max(0,Math.min(...xs)-.13),r:Math.min(1,Math.max(...xs)+.13),t:Math.max(0,Math.min(...ys)-.32),b:Math.min(.99,Math.max(...ys)+.06)};
+   act.filter(o=>!o.lock).forEach(o=>{o.next=0;target(o)})}
   A.classList.add('scene-on');
   const els=[],live=[],at=(ms,fn)=>timers.push(setTimeout(fn,ms));
   // хвост-клин от бабла к голове говорящего: видно, кто говорит, даже если бабл сдвинут
@@ -719,13 +723,14 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
     act.forEach(o=>{if(!o.lock&&inAvoid(o.tx,o.ty)){o.next=0;target(o)}})}; // кто шёл за бабл — разворачивается
   const placeBubble=(b,sp,to,qb)=>{const w=b.offsetWidth,h=b.offsetHeight,[hx,hy]=headOf(sp);
     const bodies=cast.filter(o=>inScene.has(o)).map(bodyOf).concat(reactBoxes());
+    const ob=bodyOf(sp),own={l:hx-22,r:hx+22,t:hy+14,b:ob.b},others_=cast.filter(o=>o!==sp&&inScene.has(o)).map(bodyOf); // своё тело ниже головы
     const others=shown().filter(x=>x!==b),boxes=others.map(x=>({l:x._box.x-8,r:x._box.x+x._box.w+8,t:x._box.y-8,b:x._box.y+x._box.h+8}));
     const tails=others.map(x=>x._tail).filter(Boolean);
     const want=to?Math.atan2(headOf(to)[1]-hy,headOf(to)[0]-hx):Math.atan2(-1,(AW/2-hx)/Math.max(AW,1)*2);
     const cand=[];
     if(qb&&qb._box){const Q=qb._box;[Q.x+(Q.w-w)/2,Q.x,Q.x+Q.w-w].forEach(x=>cand.push({x,y:Q.y+Q.h+14,bonus:-90}))}
     for(let k=0;k<16;k++){const ang=k*Math.PI/8,c=Math.cos(ang),s2=Math.sin(ang);
-      [26,55,95,150].forEach(d=>cand.push({x:hx+c*(d+w/2)-w/2,y:hy+s2*(d+h/2)-h/2,bonus:Math.abs(Math.atan2(Math.sin(ang-want),Math.cos(ang-want)))*70}))}
+      [34,60,95,150].forEach(d=>cand.push({x:hx+c*(d+w/2)-w/2,y:hy+s2*(d+h/2)-h/2,bonus:Math.abs(Math.atan2(Math.sin(ang-want),Math.cos(ang-want)))*70}))}
     let best=null;
     cand.forEach(c=>{const x=c.x,y=c.y;if(x<4||y<4||x+w>AW-4||y+h>AH-4)return;
       const box={l:x-6,r:x+w+6,t:y-6,b:y+h+6};
@@ -733,6 +738,7 @@ const talkScene=(T0,done)=>{const L=talkLines(T0);
       if(tails.some(t=>segHit(t[0],t[1],t[2],t[3],box)))return;                 // не ложиться на чужой хвост
       const [,nx,ny]=tailBase(x,y,w,h,hx,hy),len=Math.hypot(hx-nx,hy-ny);
       if(boxes.some(r=>segHit(nx,ny,hx,hy,r)))return;                           // свой хвост — не через чужие баблы
+      if(segHit(nx,ny,hx,hy,own)||others_.some(r=>segHit(nx,ny,hx,hy,r)))return;  // и не через своё тело, имя или чужих человечков
       const cost=len+c.bonus;if(!best||cost<best.cost)best={x,y,cost,t:[nx,ny,hx,hy]}});
     return best};
   const putBubble=(b,sp,to,qb)=>{let best=placeBubble(b,sp,to,qb);
