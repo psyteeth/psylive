@@ -152,8 +152,8 @@ body.focus .info{display:none}
 .sign.r b{clip-path:polygon(0 0,86% 0,100% 50%,86% 100%,0 100%);padding-right:24px}.sign.l b{clip-path:polygon(14% 0,100% 0,100% 100%,14% 100%,0 50%);padding-left:24px;transform:rotate(4deg)}
 /* запыхавшийся: отдувается, облачка у рта */
 .p.puff svg{animation:puff .45s ease-in-out 6}@keyframes puff{50%{scale:1.04 .95}}
-.puffc{position:absolute;left:0;top:0;font-size:20px;z-index:345;pointer-events:none;opacity:0;transform:translate(-50%,0) scale(.5);transition:transform 1s ease-out,opacity .5s}
-.puffc.on{opacity:.9;transform:translate(-50%,-18px) scale(1.1)}
+.puffc{position:absolute;left:0;top:0;font-size:18px;z-index:345;pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(calc(var(--fx,1)*.5),.5);transition:transform 1s ease-out,opacity .5s}
+.puffc.on{opacity:.9;transform:translate(calc(-50% + var(--dx,0px)),-50%) scale(calc(var(--fx,1)*1.1),1.1)}
 @media(prefers-reduced-motion:reduce){.p.puff svg{animation:none}.sign,.puffc{transition:opacity .3s}}
 @media(prefers-reduced-motion:reduce){.p.hit svg{animation:none}.toy,.boom{transition:opacity .3s}}
 .react .b{font-size:12px;padding:4px 8px;opacity:.92}
@@ -509,11 +509,20 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
   const hd=s.el.querySelector('.hd');
   // «прибегает запыхавшийся: Ты чё…» — влетает бегом и отдувается, потом говорит
   const [sAct,sBub]=actSplit(said),puff=/запыха|прибега|вбега|влета/i.test(sAct);
-  if(puff&&!intro.length)s.sp=.0011;
-  const puffs=()=>{s.el.classList.add('puff');for(let k=0;k<4;k++)at(t+k*600,()=>{const r=s.el.querySelector('svg').getBoundingClientRect(),ar=A.getBoundingClientRect(),el=document.createElement('div');
-      el.className='puffc';el.textContent='💨';el.style.left=(r.left+r.width/2-ar.left+(s.side=='l'?-26:26))+'px';el.style.top=(r.top-ar.top+10)+'px';A.append(el);toys.push(el);
+  // ходит взад-вперёд («…, ходит взад-вперёд: Ты чё…» в фразе или в продолжении) — меряет шагами свою половину
+  const PACE=/взад|туда-сюда|из стороны в сторону|ходит из угла/i,paceOn=()=>{if(pace)return;const x0=s.x;let k=0;s.sp=.00016;
+      const go=()=>{s.tx=Math.max(.06,Math.min(.94,x0+(side=='l'?1:-1)*(k++%2?.02:.13)))};go();pace=setInterval(go,2600)},
+    paceOff=()=>{clearInterval(pace);pace=null};
+  // запыхавшийся влетает сразу злым и пыхтит на бегу, а не после того, как встал
+  if(puff){setFace(s,f0||'злой');if(!intro.length)s.sp=.0011}
+  const puffs=(t0,n)=>{at(t0,()=>s.el.classList.add('puff'));for(let k=0;k<n;k++)at(t0+k*600,()=>{
+      // дым — у самого человечка (двигается вместе с ним), по бокам головы на уровне лица, уходит в стороны
+      const g=s.el.querySelector('svg').getBoundingClientRect(),er=s.el.getBoundingClientRect(),d=k%2?-1:1,el=document.createElement('div');
+      el.className='puffc';el.textContent='💨';el.style.setProperty('--dx',d*7+'px');if(d<0)el.style.setProperty('--fx','-1');
+      el.style.left=(g.left+g.width/2-er.left+d*(g.width*12/40+9))+'px';el.style.top=(g.top+g.height*14/84-er.top)+'px';s.el.append(el);toys.push(el);
       requestAnimationFrame(()=>el.classList.add('on'));setTimeout(()=>el.remove(),1200)});
-    at(t+2600,()=>s.el.classList.remove('puff'))};
+    at(t0+n*600,()=>s.el.classList.remove('puff'))};
+  if(puff&&!intro.length)puffs(0,8);
   // «толпа: …; …» — человечки вокруг по очереди выкрикивают
   const crowdSay=x=>{const L=x.replace(/^толпа\s*:\s*/i,'').split(/\s*;\s*/).filter(Boolean).slice(0,4),used=[];
     L.forEach((l,k)=>at(t+k*1500,()=>{const w=act.filter(o=>!o.lock&&!o.old&&!o.el.classList.contains('talk'));if(!w.length)return;
@@ -535,10 +544,12 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
         if(walk)for(let k=0;k<3;k++)timers.push(setTimeout(()=>{p.sp=.00012;p.tx=cx+(side=='l'?-.16:.16)+(Math.random()-.5)*.18;p.ty=cy-.06+Math.random()*.12},k*1200))});
       wait(3400)});
     at(t,()=>{s.tx=cx;if(puff)s.sp=.0011;p.tx=cx+(side=='l'?-.16:.16);p.ty=cy});
+    if(puff)puffs(t,8);
   }
   wait(puff?2200:3600);
   at(t,()=>setFace(s,f0||'злой'));
-  if(puff){puffs();wait(2400)}
+  if(puff)wait(1400); // отдышаться
+  if(PACE.test(sAct))at(t,paceOn);
   if(sBub)line(s,sBub,'');else wait(2600);
   // 3. точка А: маленький и аккуратный, медленно ходит — триггер улыбается, потом растерян. Зуб молчит.
   if(a||aa){
@@ -581,10 +592,10 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
           face=shock?'шок':hurt?'очень грустный':ESC[Math.min(rage++,2)],rip=/разрыва|на куски|рвёт|порвал/i.test(x);
         at(t,()=>{setFace(s,face);if(/крас|багр/i.test(x))hd.style.fill='#f3a29a';
           if(/кулак|маш|топа/i.test(x)&&!shock){s.el.classList.add('hit');setTimeout(()=>s.el.classList.remove('hit'),800)}
-          if(rip){s.el.classList.add('hit','rage');setFace(p,'шок');setTimeout(()=>s.el.classList.remove('hit','rage'),2400)} // в ярости рвёт на куски
+          if(rip){s.el.classList.add('hit','rage');setFace(p,calmB?'улыбка':'шок');setTimeout(()=>s.el.classList.remove('hit','rage'),2400)} // в ярости рвёт на куски
           // «ходит взад-вперёд» — триггер меряет шагами свою половину, пока не уйдёт
-          if(/взад|туда-сюда|ходит из угла/i.test(x)&&!pace){const x0=s.x;let k=0;s.sp=.00016;const go=()=>{s.tx=Math.max(.06,Math.min(.94,x0+(side=='l'?1:-1)*(k++%2?.02:.13)))};go();pace=setInterval(go,2600)}
-          if(/уход|уходит|ушл|ушёл|уш[её]л|свалива/i.test(x)){clearInterval(pace);pace=null;s.tx=side=='l'?Math.min(.9,s.x+.22):Math.max(.1,s.x-.22);s.sp=.00008}});  // уходит — участник бежит следом
+          if(PACE.test(x))paceOn();
+          if(/уход|уходит|ушл|ушёл|уш[её]л|свалива/i.test(x)){paceOff();s.tx=side=='l'?Math.min(.9,s.x+.22):Math.max(.1,s.x-.22);s.sp=.00008}});  // уходит — участник бежит следом
         const tab=xa.match(/табличк\S*\s*[«"„]([^»"“]{1,24})[»"“]/i);
         if(tab){at(t-200,()=>sign(tab[1]));wait(1400)} // табличка встаёт раньше, чем он к ней пойдёт
         if(xb)line(s,xb,'');else if(xa)wait(tab?4200:3400);else line(s,x,'');
@@ -612,8 +623,8 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
         at(t,()=>{setFace(p,'восторг');roam(false)});at(t+700,()=>say(p,'ПОБЕДА!',6000,'brag'));wait(7000);
       }else if(xa){ // действие участника; «кидается на папу, обнимает» — бежит вплотную к триггеру
         const hug=/кида|броса|обнима|прижима/i.test(xa);
-        at(t,()=>{if(hug){still();p.sp=.0009;p.tx=s.x+(side=='l'?-1:1)*Math.max(.05,46/Math.max(AW,1));p.ty=s.y}else if(!calmB)roam(false);
-          if(/рыда|плач|слёз|слез/i.test(xa))setFace(p,'грустный');else if(/весел|радует|смеёт|смеет|танцу|ржёт/i.test(xa))setFace(p,'восторг')});
+        at(t,()=>{if(hug){paceOff();s.tx=s.x;still();p.sp=.0009;p.tx=s.x+(side=='l'?-1:1)*Math.max(.05,46/Math.max(AW,1));p.ty=s.y}else if(!calmB)roam(false);
+          if(/рыда|плач|слёз|слез/i.test(xa))setFace(p,calmB?'улыбка':'грустный'); /* «спокойно» — принимает свои чувства: рыдает с улыбкой */else if(/весел|радует|смеёт|смеет|танцу|ржёт/i.test(xa))setFace(p,'восторг')});
         if(/показыва\S* (рук|пальц)|указыва/i.test(xa))at(t,()=>point(true)); // жест: палочка-рука вытягивается туда, куда идти
         if(xb){wait(hug?900:0);line(p,xb,'pb')}else wait(3400)}
       else line(p,x,'pb');
