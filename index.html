@@ -305,7 +305,10 @@ const inAvoid=(x,y)=>{if(!AVOID.length)return false;const f=figBox(x,y);return A
 const TRIG=()=>P.filter(o=>o.sad&&o.lock&&o.el.classList.contains('big'));
 const segPx=(x,y,s)=>{const k=AW,m=Math.max(1,AH-118),ax=s.x*k,ay=s.y*m,bx=s.tx*k,by=s.ty*m,px=x*k,py=y*m,
   vx=bx-ax,vy=by-ay,L=vx*vx+vy*vy,u=L?Math.max(0,Math.min(1,((px-ax)*vx+(py-ay)*vy)/L)):0;return Math.hypot(px-ax-u*vx,(py-ay-u*vy)*1.6)};
-const nearTrig=(x,y,p)=>TRIG().some(s=>s.look!==p&&segPx(x,y,s)<150);
+const nearTrig=(x,y,p)=>TRIG().some(s=>s.look!==p&&!s.el.classList.contains('attacker')&&segPx(x,y,s)<150);
+/* атакующий (папа/мама из атак): все, кроме того, за кем он пришёл, от него разбегаются и обегают его стороной */
+const ATKR=()=>P.filter(o=>o.el.classList.contains('attacker'));
+const fearPx=(x,y,p)=>{let m=1e9;for(const s of ATKR())if(s.look!==p)m=Math.min(m,Math.hypot((s.x-x)*AW,(s.y-y)*AH),segPx(x,y,s));return m};
 const candidate=p=>{
   let x=.04+Math.random()*.92,y=sel?(p.hi?.72+Math.random()*.26:.22+Math.random()*.3):.25+Math.random()*.72;
   if(zone){ // остаёмся со своей стороны зоны, чтобы не идти сквозь неё
@@ -320,7 +323,9 @@ const candidate=p=>{
 const target=p=>{if(p.lock)return;let best=null,bd=-1;const tg=TRIG().length;
   for(let k=0;k<(AVOID.length||tg?20:7);k++){const c=candidate(p);if(inAvoid(c.x,c.y)||AVOID.length&&[.2,.4,.6,.8].some(f=>inAvoid(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f)))continue;
     if(tg&&[0,.25,.5,.75,1].some(f=>nearTrig(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f,p)))continue;let d=1e9; // и не через триггера: // ни точка, ни путь к ней — не за баблом
-    if(chase&&p!==chase.p&&!p.old)d=Math.hypot((chase.p.x-c.x)*AW,(chase.p.y-c.y)*AH); // убегаем от того, кто выебнулся
+    const ak=ATKR().filter(s=>s.look!==p);
+    if(ak.length)for(const f of [.25,.5,.75,1])d=Math.min(d,fearPx(p.x+(c.x-p.x)*f,p.y+(c.y-p.y)*f,p)); // от атакующего — подальше, и путь не мимо него
+    else if(chase&&p!==chase.p&&!p.old)d=Math.hypot((chase.p.x-c.x)*AW,(chase.p.y-c.y)*AH); // убегаем от того, кто выебнулся
     else for(const o of P){if(o===p||o.old||o.bot||o.sad)continue;d=Math.min(d,Math.hypot((o.tx-c.x)*AW,(o.ty-c.y)*AH*.7),Math.hypot((o.x-c.x)*AW,(o.y-c.y)*AH*.7))}
     if(d>bd){bd=d;best=c}}
   if(!best){const s=tg&&TRIG()[0];best=s?{x:s.x<.5?.78+Math.random()*.18:.04+Math.random()*.18,y:s.y<.6?.82+Math.random()*.14:.25+Math.random()*.15}:candidate(p)}
@@ -334,13 +339,15 @@ let last=performance.now();
 let calm=false; // идёт диалог: фон гуляет медленно и спокойно, без рывков («сабай-сабай»)
 let trigChk=0;
 const tick=t=>{const dt=Math.min(50,t-last);last=t;
-  if(t>trigChk){trigChk=t+250;if(TRIG().length)for(const p of P)if(!p.lock&&!p.sad&&!p.bot&&nearTrig(p.tx,p.ty,p)){p.next=0;target(p)}} // стоит на пути триггера — спокойно отходит
+  if(t>trigChk){trigChk=t+250;const ak=ATKR().length;if(TRIG().length){for(const p of P)if(!p.lock&&!p.sad&&!p.bot){
+      p.flee=ak&&fearPx(p.x,p.y,p)<300; // атакующий рядом — бегом
+      if(nearTrig(p.tx,p.ty,p)||ak&&fearPx(p.tx,p.ty,p)<220){p.next=0;target(p)}}}else for(const p of P)p.flee=false} // стоит на пути триггера — отходит
   for(const p of P){
     if(p.orb&&t>=p.orb.t0){const o=p.orb,th=o.ph+(t-o.t0)*o.w; // плавное кружение по эллипсу, считается в каждом кадре
       p.x=p.tx=o.cx+o.R*Math.cos(th);p.y=p.ty=o.cy+o.r*Math.sin(th);p.moving=false;place(p);continue}
     const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
     if(RM){p.x=p.tx;p.y=p.ty;p.moving=false}
-    else if(d>.004){const out=!p.lock&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b||inAvoid(p.x,p.y)),v=Math.min(p.sp*dt*(calm&&!p.lock?(out?.42:.3)*Math.min(1,.35+d/.05):out?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=calm&&!p.lock?dt*.5:dt;p.moving=true}
+    else if(d>.004){const out=!p.lock&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y<zone.b||inAvoid(p.x,p.y)),v=Math.min(p.sp*dt*(calm&&!p.lock?(out?.42:.3)*Math.min(1,.35+d/.05):out?3.5:1)*(chase&&!p.old?(p===chase.p?2.4:1.9):1)*(p.flee&&!p.lock?4:1),d);p.x+=dx/d*v;p.y+=dy/d*v*.6;p.walk+=calm&&!p.lock?dt*.5:dt;p.moving=true}
     else{p.moving=false;if(!p.lock){if(!p.next)p.next=t+(calm?4000+Math.random()*6000:800+Math.random()*3800);else if(t>p.next){p.next=0;target(p)}}}
     if(calm||p.tk){const tk=calm&&!p.lock&&!p.el.classList.contains('cast')&&(zone&&p.x>zone.l&&p.x<zone.r&&p.y>zone.t&&p.y<zone.b||inAvoid(p.x,p.y));
       if(tk!==!!p.tk){p.tk=tk;p.el.classList.toggle('tuck',tk)}}
@@ -957,8 +964,8 @@ const attackScene=(A0,done)=>{const p=byNick(A0.who);if(!p||p.lock&&!focus)retur
     tx.setAttribute('class','prop');tx.setAttribute('x','20');tx.setAttribute('y','62');tx.setAttribute('text-anchor','middle');tx.textContent=A0.prop;sv.append(tx)} // прикрывается: предмет перед телом
   s.x=fromL?-.06:1.06;s.y=s.ty=.55;s.tx=s.x;s.sp=.00016;P.push(s);
   const near=o=>Math.hypot((o.x-s.x)*AW,(o.y-s.y)*AH)<60;
-  // 1. ищет: подходит к одному-двум другим, приглядывается — не тот
-  const look=focus?[]:act.filter(o=>o!==p&&!o.lock&&!o.old).sort(()=>Math.random()-.5).slice(0,2);
+  // идёт прямо к участнику; остальные от него разбегаются (ATKR в target/tick), ни с кем не пересекается
+  const look=[];s.look=p;
   const go=(k)=>{if(ended)return;
     if(k<look.length){const o=look[k];s.look=o;s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;
       const chk=()=>{if(ended)return;if(near(o)||Math.hypot(s.tx-s.x,s.ty-s.y)<.01){setFace(s,A0.face||'злой');at(1400,()=>go(k+1))}else{s.tx=o.x+(o.x>s.x?-.06:.06);s.ty=o.y;at(200,chk)}};at(200,chk);return}
