@@ -504,7 +504,7 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
   p.lock=true;p.side=side;p.tx=cx+(side=='l'?-.16:.16);p.ty=cy;p.el.classList.add('fighter');setFace(p,'улыбка');
   const L=side=='l'?Math.max(.02,cx-.5):cx-.12,Rr=side=='l'?cx+.12:Math.min(.98,cx+.5);
   clear([p],cx,cy);zone={l:L,r:Rr,t:0,b:Math.min(.98,cy+.26)};act.filter(o=>!o.lock).forEach(o=>{o.next=0;target(o)});
-  const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big','fighter','cast');setFace(s,'улыбка');
+  const s=mk({n:role,g:'u',t:[]},'sad');s.sad=true;s.lock=true;s.el.classList.add('big','fighter','cast');setFace(s,f0||'злой'); // приходит сразу со своим лицом: батя — недовольный
   s.side=side=='l'?'r':'l';s.x=side=='l'?1.06:-.06;s.y=s.ty=cy;s.tx=intro.length?s.x:cx;s.sp=.0002;P.push(s);
   const hd=s.el.querySelector('.hd');
   // «прибегает запыхавшийся: Ты чё…» — влетает бегом и отдувается, потом говорит
@@ -514,7 +514,7 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
       const go=()=>{s.tx=Math.max(.06,Math.min(.94,x0+(side=='l'?1:-1)*(k++%2?.02:.13)))};go();pace=setInterval(go,2600)},
     paceOff=()=>{clearInterval(pace);pace=null};
   // запыхавшийся влетает сразу злым и пыхтит на бегу, а не после того, как встал
-  if(puff){setFace(s,f0||'злой');if(!intro.length)s.sp=.0011}
+  if(puff&&!intro.length)s.sp=.0011;
   const puffs=(t0,n)=>{at(t0,()=>s.el.classList.add('puff'));for(let k=0;k<n;k++)at(t0+k*600,()=>{
       // дым — у самого человечка (двигается вместе с ним), по бокам головы на уровне лица, уходит в стороны
       const g=s.el.querySelector('svg').getBoundingClientRect(),er=s.el.getBoundingClientRect(),d=k%2?-1:1,el=document.createElement('div');
