@@ -822,7 +822,7 @@ function buildLive_(inp, nowMs, salt, hash) {
   // Только для тех, кого показываем; клетка с адресом, телефоном, фамилией или именем — пустая (см. журнал).
   var cards = [], sums = [];
   stats.cards = 0;
-  if (inp.ptCards && inp.ptCards.length > 2) {
+  if (inp.ptCards && inp.ptCards.length > 1) {
     var CH = {};
     inp.ptCards[0].forEach(function (h, i) { CH[String(h).trim().toLowerCase()] = i; });
     var cc = function (r, k) { var i = CH[k.toLowerCase()]; return i == null ? '' : String(r[i] || '').replace(/\s+/g, ' ').trim(); };
@@ -834,7 +834,9 @@ function buildLive_(inp, nowMs, salt, hash) {
       return t;
     };
     var F = CARD_COLS.slice(2, 12), byKey = {}, sumOf = {};
-    inp.ptCards.slice(2).forEach(function (r) {
+    // со 2-й строки: строка подсказок (если есть) сама отсеется — её «@ник как в …» не совпадёт ни с кем;
+    // бот-секретарь может создать вкладку без подсказок, и тогда данные начинаются со 2-й строки
+    inp.ptCards.slice(1).forEach(function (r) {
       var p = byUser(cc(r, 'ник_tg'));
       if (!p || !p.show || !idx.has(p)) return;
       var w = idx.get(p), tooth = (cc(r, 'зуб').match(/\b[1-4][1-8]\b/) || [''])[0];
