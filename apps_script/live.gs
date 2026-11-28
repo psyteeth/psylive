@@ -129,18 +129,37 @@ function readInput_() {
     return { name: s.getName().replace(/\s+/g, ' ').trim().toUpperCase(), display: s.getDataRange().getDisplayValues() };
   });
   // ALIASES — второй файл проекта «Прозвища.gs» (шаблон apps_script/aliases.example.gs); его может не быть
-  var ptPeople = [], ptComm = [];
+  var ptPeople = [], ptComm = [], ptCards = [];
   if (CONFIG.PEOPLE_ID && CONFIG.PEOPLE_ID.indexOf('ВСТАВЬТЕ') < 0) {
     var pt = SpreadsheetApp.openById(CONFIG.PEOPLE_ID);
     var su = pt.getSheetByName('Участники'), sc = pt.getSheetByName('Коммуникации');
     if (su) ptPeople = su.getDataRange().getDisplayValues();
     if (sc) ptComm = sc.getDataRange().getDisplayValues();
+    ptCards = cardsSheet_(pt).getDataRange().getDisplayValues();
   }
-  return { ptPeople: ptPeople, ptComm: ptComm, msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
+  return { ptPeople: ptPeople, ptComm: ptComm, ptCards: ptCards, msgs: msgs, champ: champ, months: months, current: cur, aliases: typeof ALIASES !== 'undefined' ? ALIASES : {},
     nicks: typeof NICKS !== 'undefined' ? NICKS : {}, exclude: typeof EXCLUDE !== 'undefined' ? EXCLUDE : [],
     names: people, hide: typeof HIDE !== 'undefined' ? HIDE : [], pinned: typeof PINNED !== 'undefined' ? PINNED : {}, merge: typeof MERGE !== 'undefined' ? MERGE : {},
     phraseKeep: typeof PHRASE_KEEP !== 'undefined' ? PHRASE_KEEP : [], phraseDrop: typeof PHRASE_DROP !== 'undefined' ? PHRASE_DROP : [] };
 }
+
+// Вкладка «Карточки» в таблице участников: одна строка = участник + зуб. Если вкладки нет — создаём с шапкой и подсказками.
+var CARD_COLS = ['ник_tg', 'зуб', 'триггер', 'точка_А', 'точка_Б', 'все_СП', 'все_АЖ', 'ОЧЛ', 'дофаминовая_ID', 'опасная_ID', 'зачем_зуб', 'залупа', 'путь_роста'];
+var CARD_HINTS = ['@ник как в «Участниках»', '43', 'кто/что запускает', 'как сейчас', 'куда идём', 'все спарринг-партнёры', 'все альфа-жертвы', 'ОЧЛ',
+  'дофаминовая идентичность', 'опасная идентичность', '(письки-зубы) зачем нужен зуб', '(сокровенная) залупа', 'путь роста: успехи общими словами, каждый с новой строки (Alt+Enter); можно в любой строке человека — всё сложится'];
+function cardsSheet_(pt) {
+  var sh = pt.getSheetByName('Карточки');
+  if (!sh) {
+    sh = pt.insertSheet('Карточки');
+    sh.getRange(1, 1, 2, CARD_COLS.length).setValues([CARD_COLS, CARD_HINTS]);
+    sh.getRange(1, 1, 1, CARD_COLS.length).setFontWeight('bold');
+    sh.getRange(2, 1, 1, CARD_COLS.length).setFontStyle('italic').setFontColor('#888888');
+    sh.setFrozenRows(2);
+  }
+  return sh;
+}
+/** Запустите один раз из редактора, чтобы вкладка «Карточки» появилась сразу. */
+function setupCards() { cardsSheet_(SpreadsheetApp.openById(CONFIG.PEOPLE_ID)); }
 
 // ---------- чистая логика (её же гоняет test/run.js в node) ----------
 
@@ -799,6 +818,43 @@ function buildLive_(inp, nowMs, salt, hash) {
     stats.comm = comm.length;
   }
 
+  // Карточки: [номер, зуб, [триггер, А, Б, СП, АЖ, ОЧЛ, дофаминовая ID, опасная ID, зачем зуб, залупа]] и сводки [номер, текст].
+  // Только для тех, кого показываем; клетка с адресом, телефоном, фамилией или именем — пустая (см. журнал).
+  var cards = [], sums = [];
+  stats.cards = 0;
+  if (inp.ptCards && inp.ptCards.length > 2) {
+    var CH = {};
+    inp.ptCards[0].forEach(function (h, i) { CH[String(h).trim().toLowerCase()] = i; });
+    var cc = function (r, k) { var i = CH[k.toLowerCase()]; return i == null ? '' : String(r[i] || '').replace(/\s+/g, ' ').trim(); };
+    var ctxt = function (t, max) {
+      if (!t) return '';
+      if (t.length > max || /https?:|www\.|@\w|#|\d{5,}/.test(t) || PERSONAL.test(t) || SURNAME.test(t) || !safe(t) || hasCommonName_(t)) {
+        debug.reportMiss.push('карточка: клетка не прошла фильтр (имя, фамилия, контакт или слишком длинно)'); return '';
+      }
+      return t;
+    };
+    var F = CARD_COLS.slice(2, 12), byKey = {}, sumOf = {};
+    inp.ptCards.slice(2).forEach(function (r) {
+      var p = byUser(cc(r, 'ник_tg'));
+      if (!p || !p.show || !idx.has(p)) return;
+      var w = idx.get(p), tooth = (cc(r, 'зуб').match(/\b[1-4][1-8]\b/) || [''])[0];
+      // путь роста: каждая строка клетки — отдельный успех; строки из всех рядов человека складываются
+      var gi = CH['путь_роста'] != null ? CH['путь_роста'] : CH['сводка_ии'];
+      String(gi == null ? '' : r[gi] || '').split(/\n+/).forEach(function (x) {
+        x = ctxt(x.replace(/\s+/g, ' ').trim(), 400);
+        if (!x) return;
+        var g = sumOf[w] || (sumOf[w] = []);
+        if (g.indexOf(x) < 0 && g.length < 30) g.push(x);
+      });
+      if (!tooth) return;
+      var k = w + ':' + tooth, row = byKey[k] || (byKey[k] = [w, tooth, F.map(function () { return ''; })]);
+      F.forEach(function (f, j) { var v = ctxt(cc(r, f), 600); if (v && !row[2][j]) row[2][j] = v; });
+    });
+    Object.keys(byKey).forEach(function (k) { if (byKey[k][2].some(Boolean)) cards.push(byKey[k]); });
+    Object.keys(sumOf).forEach(function (w) { sums.push([+w, sumOf[w]]); }); // [номер, [успех, …]]
+    stats.cards = cards.length;
+  }
+
   // реплики толпы: короткие ответы из чата («жесть», «ахахах», «ору»)
   var react = [], seenR = {};
   seq.slice().reverse().forEach(function (m) {
@@ -831,6 +887,8 @@ function buildLive_(inp, nowMs, salt, hash) {
     }),
     fights: fights,
     comm: comm,
+    cards: cards,
+    sums: sums,
     solo: solo,
     react: react,
     bot: bot,

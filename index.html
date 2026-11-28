@@ -134,10 +134,14 @@ body.focus .info{display:none}
 .pl{padding:10px 14px 12px;border-top:2px dashed var(--fig);border-bottom:2px dashed var(--fig);display:grid;gap:6px;align-content:start}
 @media(min-width:900px){body.focus .stage{display:grid;grid-template-columns:minmax(280px,360px) 1fr}body.focus .tw{grid-column:1/-1}body.focus .pl{border-bottom:0;border-right:2px dashed var(--fig)}}
 .pl .plh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.pl .hello{margin:0;font-size:15px}
-/* Карточка человека (data/cards.json): имя, зубы в работе, по каждому зубу пункты, сводка ИИ */
-.pl .cardx{display:grid;gap:4px;font-size:15px}.pl .cardx p{margin:0}.pl .cardx b{font-weight:700}
-.pl .cardx ul{margin:0;padding-left:20px;display:grid;gap:6px}.pl .cardx ul ul{gap:1px;padding-left:18px;list-style:'– '}
-.pl .cardx .nv{color:var(--mute)}.pl .cardx .sum{margin-top:4px;padding:8px 10px;border:2px solid var(--fig);border-radius:10px}
+/* Карточка человека (вкладка «Карточки»): имя, зубы в работе, по каждому зубу пункты, сводка ИИ */
+.pl .cardx{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;font-size:15px}.pl .cardx p{margin:0}.pl .cardx b{font-weight:700}
+.pl .cardx ul{margin:0;padding-left:20px;display:grid;gap:6px}.pl .cardx ul ul{gap:1px;padding:2px 0 4px 34px;list-style:'– '}
+.pl .cardx ul.teeth{list-style:none;padding-left:0;gap:2px}.pl .cardx summary{list-style:none;cursor:pointer;min-height:36px;display:flex;align-items:center;gap:4px}
+.pl .cardx summary::-webkit-details-marker{display:none}
+.pl .cardx summary::before{content:'+';display:inline-grid;place-items:center;width:24px;height:24px;margin-right:6px;border:2px solid var(--ink);border-radius:50%;font:700 16px/1 Inter,system-ui,sans-serif}
+.pl .cardx details[open]>summary::before{content:'−'}
+.pl .cardx .nv{color:var(--mute)}.pl .cardx .sum{margin-top:4px;padding:8px 10px;border:2px solid var(--fig);border-radius:10px}.pl .cardx .sum ul{padding:4px 0 0 20px;gap:3px;list-style:disc}
 .pl .back,.pl .more{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 14px Inter,system-ui,sans-serif;cursor:pointer;justify-self:start}
 .pl .pltabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.pl .pltabs button{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 15px Inter,system-ui,sans-serif;cursor:pointer}.pl .pltabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
 .pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
@@ -745,20 +749,28 @@ const sceneTitle=c=>{if(isAtk(c))return c.role?`${cap(c.role)}: «${atkText(c)}�
 let plTab='life';const TABN={life:'Сцены из жизни',atk:'Атаки'};
 const plAll=t=>scenesOf(focus).filter(c=>(t=='atk')===isAtk(c)&&(!fT||toothOfScene(c)===fT));
 const plList=()=>plAll(plTab);
-/* Карточка: data/cards.json = {"Ник":{"teeth":{"43":{"a":"…","b":"…","sp":"…","azh":"…","ochl":"…","id":"…","why":"…","z":"…"}},"summary":"…"}}.
-   Пустой пункт показывается прочерком. Зубы — из карточки и из таблицы/сцен. */
-let CARDS={};fetch('data/cards.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).then(t=>{CARDS=t&&typeof t=='object'?t:{};if(focus)cardRender(focus)}).catch(()=>{});
-const CF=[['a','т. А'],['b','т. Б'],['sp','СП'],['azh','АЖ'],['ochl','ОЧЛ'],['id','Дофаминовая ID'],['why','Зачем нужен зуб'],['z','Сокровенная залупа']];
-const cardRender=p=>{const box=PL.querySelector('.cardx'),k=CARDS[p.name]||{},kt=k.teeth||{};box.innerHTML='';
+/* Карточка из вкладки «Карточки» таблицы участников (live.json: cards = [номер, зуб, 10 пунктов], sums = [номер, сводка]).
+   Пустой пункт — прочерк. Зубы — из таблицы, сцен и карточки. */
+const CF=['Триггер','т. А','т. Б','Все СП','Все АЖ','ОЧЛ','Дофаминовая ID','Опасная ID','(письки-зубы) Зачем зуб','(сокровенная) Залупа'];
+const cardOf=p=>{const w=(DATA.people||[]).findIndex(x=>x.n===p.name),kt={};let sum=[];
+  (DATA.cards||[]).forEach(([i,t,f])=>{if(i===w)kt[t]=f});(DATA.sums||[]).forEach(([i,s])=>{if(i===w)sum=Array.isArray(s)?s:[s]});return{kt,sum}};
+const cardOpen=new Set();
+const cardRender=p=>{const box=PL.querySelector('.cardx'),{kt,sum}=cardOf(p);box.innerHTML='';
   const el=(t,c,txt)=>{const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e};
   const line=(lab,val)=>{const e=el('p');e.append(el('b',null,lab+': '),val?document.createTextNode(val):el('span','nv','—'));return e};
   box.append(line('Имя',p.name));
   const T=[...new Set([...teethOf(p),...Object.keys(kt)].map(String))].sort((x,y)=>x-y);
   if(p.bot){box.append(el('p',null,'Приношу цитаты из разборов.'));return}
   box.append(el('p',null,null));box.lastChild.append(el('b',null,T.length?'Работает с зубами:':'Зуб пока не записан.'));
-  if(T.length){const ul=el('ul');T.forEach(t=>{const li=el('li'),f=kt[t]||{},sub=el('ul');li.append(el('b',null,String(t)));
-    CF.forEach(([key,lab])=>{const s=el('li');s.append(lab+': ',f[key]?document.createTextNode(f[key]):el('span','nv','—'));sub.append(s)});li.append(sub);ul.append(li)});box.append(ul)}
-  const sm=el('p','sum');sm.append(el('b',null,'Сводка ИИ: '),k.summary?document.createTextNode(k.summary):el('span','nv','появится после созвонов.'));box.append(sm)};
+  // каждый зуб свёрнут; «+» раскрывает пункты, «−» сворачивает; раскрытые остаются раскрытыми при перерисовке
+  if(T.length){const ul=el('ul','teeth');T.forEach(t=>{const li=el('li'),f=kt[t]||[],sub=el('ul'),d=el('details'),s0=el('summary'),key=p.name+':'+t,n=f.filter(Boolean).length;
+    d.open=cardOpen.has(key);d.addEventListener('toggle',()=>{d.open?cardOpen.add(key):cardOpen.delete(key)});
+    // в свёрнутой строке — точка Б этого зуба
+    const pb=el('span',null,' · ');pb.append(el('b',null,'Т. Б: '),f[2]?document.createTextNode(soft(f[2])):el('span','nv','—'));s0.append(el('b',null,t+'🦷'),pb);
+    CF.forEach((lab,j)=>{const s=el('li');s.append(lab+': ',f[j]?document.createTextNode(soft(f[j])):el('span','nv','—'));sub.append(s)});d.append(s0,sub);li.append(d);ul.append(li)});box.append(ul)}
+  // путь роста: успехи с созвонов, копятся списком
+  const sm=el('div','sum');sm.append(el('b',null,'Путь роста:'));
+  if(sum&&sum.length){const gl=el('ul');sum.forEach(x=>gl.append(el('li',null,soft(x))));sm.append(gl)}else sm.append(el('span','nv',' появится после созвонов.'));box.append(sm)};
 const plRender=()=>{const L=plList(),shown=plOpen?L:L.slice(0,10);
   cardRender(focus);
   PL.querySelectorAll('.pltabs button').forEach(b=>{const t=b.dataset.t;b.textContent=`${TABN[t]} · ${plAll(t).length}`;b.setAttribute('aria-selected',t==plTab)});
@@ -785,6 +797,7 @@ const exitFocus=()=>{if(!focus)return;if(curScene)curScene.stop();scene=false;qu
   act.forEach(o=>{if(!o.lock){o.next=0;target(o)}});kick(2500)};
 const tap=p=>{if(p.sad||p.bot)return;if(focus===p)return;enterFocus(p)};
 PL.querySelector('.back').addEventListener('click',exitFocus);
+$('#soft').addEventListener('change',()=>{if(focus)cardRender(focus)}); // мат в карточке глушится сразу
 PL.querySelector('.more').addEventListener('click',()=>{plOpen=!plOpen;plRender()});
 PL.querySelector('.pltabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.t==plTab)return;
   plTab=b.dataset.t;plOpen=false;queue=[];if(curScene){curScene.stop();scene=false}plRender()}); // другая вкладка: текущая сцена останавливается

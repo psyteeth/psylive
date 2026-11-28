@@ -26,7 +26,7 @@ GS = ROOT / "apps_script" / "live.gs"
 TOOTH_RE = re.compile(r"^[1-4][1-8]$")
 UPDATED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 BAD_TEXT_RE = re.compile(r"https?:|www\.|@\w|#|\d{5,}")
-STATS_KEYS = {"blocks", "comm", "table_people", "efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs", "self_teeth", "nick_teeth"}
+STATS_KEYS = {"blocks", "comm", "table_people", "efir_unmatched", "efir_ambiguous", "reports", "reports_matched", "point_b", "point_b_matched", "zub_msgs", "self_teeth", "nick_teeth", "cards"}
 
 
 class Bad(Exception):
@@ -149,6 +149,29 @@ def clean(raw, pools):
         t = lambda x: "" if x == "" else text_ok(x, 230, w)
         out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth,
                       t(ra), t(rb), [text_ok(x, 230, w) for x in chain], [text_ok(x, 230, w) for x in intro]])
+    # карточки: [номер, зуб, 10 пунктов] и путь роста [номер, [успех, …]]
+    cards = raw.get("cards", [])
+    if not isinstance(cards, list) or len(cards) > 400:
+        raise Bad("cards")
+    out_k = []
+    for i, c in enumerate(cards):
+        w = f"cards[{i}]"
+        if (not isinstance(c, list) or len(c) != 3 or not isinstance(c[0], int) or isinstance(c[0], bool)
+                or not 0 <= c[0] < len(out_people) or not isinstance(c[1], str) or not TOOTH_RE.match(c[1])
+                or not isinstance(c[2], list) or len(c[2]) != 10):
+            raise Bad(w)
+        out_k.append([c[0], c[1], ["" if x == "" else text_ok(x, 600, w) for x in c[2]]])
+    sums = raw.get("sums", [])
+    if not isinstance(sums, list) or len(sums) > 400:
+        raise Bad("sums")
+    out_su = []
+    for i, x in enumerate(sums):
+        if (not isinstance(x, list) or len(x) != 2 or not isinstance(x[0], int) or isinstance(x[0], bool)
+                or not 0 <= x[0] < len(out_people)):
+            raise Bad(f"sums[{i}]")
+        if not isinstance(x[1], list) or not 1 <= len(x[1]) <= 30:
+            raise Bad(f"sums[{i}]: путь роста")
+        out_su.append([x[0], [text_ok(t, 400, f"sums[{i}]") for t in x[1]]])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")
@@ -167,6 +190,8 @@ def clean(raw, pools):
         "fights": out_f,
         "solo": out_s,
         "comm": out_c,
+        "cards": out_k,
+        "sums": out_su,
         "react": [text_ok(x, 40, "react") for x in react],
         "bot": [text_ok(x, 130, "bot") for x in bot],
         "stats": {**stats, "blocks": blocks},
