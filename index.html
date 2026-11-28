@@ -141,7 +141,7 @@ body.focus .info{display:none}
 .pl .cardx summary::-webkit-details-marker{display:none}
 .pl .cardx summary::before{content:'+';display:inline-grid;place-items:center;width:24px;height:24px;margin-right:6px;border:2px solid var(--ink);border-radius:50%;font:700 16px/1 Inter,system-ui,sans-serif}
 .pl .cardx details[open]>summary::before{content:'−'}
-.pl .cardx .nv{color:var(--mute)}.pl .cardx .sum{margin-top:4px;padding:8px 10px;border:2px solid var(--fig);border-radius:10px}.pl .cardx .sum ul{padding:4px 0 0 20px;gap:3px;list-style:disc}
+.pl .cardx .nv{color:var(--mute)}.pl .cardx .sum{margin-top:4px;padding:8px 10px;border:2px solid var(--fig);border-radius:10px}.pl .cardx .sum p{margin:4px 0 0}
 .pl .back,.pl .more{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 14px Inter,system-ui,sans-serif;cursor:pointer;justify-self:start}
 .pl .pltabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.pl .pltabs button{min-height:40px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);color:var(--ink);font:700 15px Inter,system-ui,sans-serif;cursor:pointer}.pl .pltabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
 .pl h3{margin:4px 0 0;font:700 18px Inter,system-ui,sans-serif}.pl .empty{margin:0;color:var(--mute)}
@@ -770,9 +770,9 @@ const cardRender=p=>{const box=PL.querySelector('.cardx'),{kt,sum}=cardOf(p);box
     // в свёрнутой строке — точка Б этого зуба
     const pb=el('span',null,' · ');pb.append(el('b',null,'Т. Б: '),f[2]?document.createTextNode(soft(f[2])):el('span','nv','—'));s0.append(el('b',null,t+'🦷'),pb);
     CF.forEach((lab,j)=>{const s=el('li');s.append(lab+': ',f[j]?document.createTextNode(soft(f[j])):el('span','nv','—'));sub.append(s)});d.append(s0,sub);li.append(d);ul.append(li)});box.append(ul)}
-  // путь роста: успехи с созвонов, копятся списком
-  const sm=el('div','sum');sm.append(el('b',null,'Путь роста:'));
-  if(sum&&sum.length){const gl=el('ul');sum.forEach(x=>gl.append(el('li',null,soft(x))));sm.append(gl)}else sm.append(el('span','nv',' появится после созвонов.'));box.append(sm)};
+  // портрет зуба: из калибровок, атак и стычек; каждый элемент — абзац
+  const sm=el('div','sum');sm.append(el('b',null,'Портрет зуба:'));
+  if(sum&&sum.length)sum.forEach(x=>sm.append(el('p',null,soft(x))));else sm.append(el('span','nv',' появится после калибровок.'));box.append(sm)};
 const plRender=()=>{const L=plList(),shown=plOpen?L:L.slice(0,10);
   cardRender(focus);
   PL.querySelectorAll('.pltabs button').forEach(b=>{const t=b.dataset.t;b.textContent=`${TABN[t]} · ${plAll(t).length}`;b.setAttribute('aria-selected',t==plTab)});

@@ -150,7 +150,7 @@ def clean(raw, pools):
         t = lambda x: "" if x == "" else text_ok(x, 230, w)
         out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth,
                       t(ra), t(rb), [text_ok(x, 230, w) for x in chain], [text_ok(x, 230, w) for x in intro], t(rule)])
-    # карточки: [номер, зуб, 10 пунктов] и путь роста [номер, [успех, …]]
+    # карточки: [номер, зуб, 10 пунктов] и портрет зуба [номер, [абзац, …]]
     cards = raw.get("cards", [])
     if not isinstance(cards, list) or len(cards) > 400:
         raise Bad("cards")
@@ -171,8 +171,8 @@ def clean(raw, pools):
                 or not 0 <= x[0] < len(out_people)):
             raise Bad(f"sums[{i}]")
         if not isinstance(x[1], list) or not 1 <= len(x[1]) <= 30:
-            raise Bad(f"sums[{i}]: путь роста")
-        out_su.append([x[0], [text_ok(t, 400, f"sums[{i}]") for t in x[1]]])
+            raise Bad(f"sums[{i}]: портрет зуба")
+        out_su.append([x[0], [text_ok(t, 1200, f"sums[{i}]") for t in x[1]]])
     react = raw.get("react", [])
     if not isinstance(react, list) or len(react) > 80:
         raise Bad("react")
