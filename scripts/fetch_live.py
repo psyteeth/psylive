@@ -128,14 +128,15 @@ def clean(raw, pools):
     out_c = []
     for i, c in enumerate(comm):
         w = f"comm[{i}]"
-        if not isinstance(c, list) or len(c) not in (12, 15, 16):
-            raise Bad(f"{w}: ожидается 12, 15 или 16 полей")
+        if not isinstance(c, list) or len(c) not in (12, 15, 16, 17):
+            raise Bad(f"{w}: ожидается 12, 15, 16 или 17 полей")
         who, role, f0, said, a, fa, aa, faa, b, fb, portal, tooth = c[:12]
         # 15 и 16 полей: реакции и продолжение_Б есть в обоих (раньше при 16 полях продолжение терялось)
         ra, rb, chain = (c[12], c[13], c[14]) if len(c) >= 15 else ("", "", [])
         if not isinstance(chain, list) or len(chain) > 8:
             raise Bad(f"{w}: продолжение_Б")
-        intro = c[15] if len(c) == 16 else []
+        intro = c[15] if len(c) >= 16 else []
+        rule = c[16] if len(c) == 17 else ""  # «правило» — подпись сцены в плейлисте
         if not isinstance(intro, list) or len(intro) > 4:
             raise Bad(f"{w}: до_триггера")
         if not isinstance(who, int) or isinstance(who, bool) or not 0 <= who < len(out_people):
@@ -148,7 +149,7 @@ def clean(raw, pools):
             raise Bad(f"{w}: портал или зуб")
         t = lambda x: "" if x == "" else text_ok(x, 230, w)
         out_c.append([who, role, f0, text_ok(said, 230, w), t(a), fa, t(aa), faa, t(b), fb, portal, tooth,
-                      t(ra), t(rb), [text_ok(x, 230, w) for x in chain], [text_ok(x, 230, w) for x in intro]])
+                      t(ra), t(rb), [text_ok(x, 230, w) for x in chain], [text_ok(x, 230, w) for x in intro], t(rule)])
     # карточки: [номер, зуб, 10 пунктов] и путь роста [номер, [успех, …]]
     cards = raw.get("cards", [])
     if not isinstance(cards, list) or len(cards) > 400:

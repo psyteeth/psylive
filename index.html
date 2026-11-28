@@ -564,7 +564,7 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
     // обычно в А участник маленький и аккуратно ходит вокруг. Если у ответа_А есть своё действие
     // («показывает доказательства, что вырос: Да нет, мам…») — не сжимается, стоит рядом и играет его
     const [aAct]=actSplit(a||'');
-    if(aAct){at(t,()=>{still();setFace(p,'улыбка');p.sp=.0003;p.tx=s.x+(side=='l'?-1:1)*Math.max(.12,140/Math.max(AW,1));p.ty=s.y});
+    if(aAct){at(t,()=>{still();setFace(p,/доказ/i.test(aAct)?'грустный':'улыбка');/* доказывает, что вырос, — грустит */p.sp=.0003;p.tx=s.x+(side=='l'?-1:1)*Math.max(.12,140/Math.max(AW,1));p.ty=s.y});
       // доказательства — по одному, сеткой 2×2 ровно посередине между ним и триггером, на уровне груди
       if(/доказ|показыва/i.test(aAct))['💵','💳','📈','🔑'].forEach((e,k)=>at(t+2200+k*900,()=>{const [x1,y1]=feetPx(p),[x2]=feetPx(s),mx=(x1+x2)/2;
         proofs.push(prop(p,e,[mx+(k%2?15:-15),y1-82+(k>>1)*30]))}))}
@@ -576,13 +576,15 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
     if(aa)ans(aa,'paa');
     // реакция_после_А: «Непутёвенький ты мой» — баблом; действие («успокаивается») — лицом
     const ra=C[12]||'';if(ra){const [,rb_]=actSplit(ra);if(rb_)line(s,rb_,'');else wait(2000)}
-    at(t,()=>{setFace(p,'улыбка');setFace(s,faa||'растерянный')});wait(3200);
+    at(t,()=>{setFace(p,/доказ/i.test(aAct)?'грустный':'улыбка');/* доказывал — грустит и под «непутёвенький», до точки Б */setFace(s,faa||'растерянный')});wait(3200);
   }
   // 4. точка Б: носится, кричит, игрушки летят по всей квартире. Зуб мигает всё время, пока он в Б.
   if(b){
     // «спокойно: А знаешь, иди-ка ты нахуй» — участник в Б не носится, а спокойно стоит на месте
     const calmB=/^спокойн/i.test(actSplit(b)[0]);
-    at(t,()=>{p.el.classList.remove('small');setFace(p,calmB?'улыбка':'восторг');if(calmB)still();else roam(false);proofs.forEach(e=>e.style.opacity=0);
+    // взрослый в Б спокоен и не суетится; носится только ребёнок, у которого в ответе_Б «бегать, игрушки»
+    const kidB=/бега|игрушк|прыга|носит|скач|вигвам/i.test(b);
+    at(t,()=>{p.el.classList.remove('small');setFace(p,calmB?'улыбка':'восторг');if(kidB)roam(false);else still();proofs.forEach(e=>e.style.opacity=0);
       if(tooth){flashTooth(tooth);blink=setInterval(()=>flashTooth(tooth),2100)}});
     const tb=t,[,bb]=actSplit(b);if(bb)line(p,bb,'pb');else wait(3400);
     // игрушки — только если они есть в самой истории (у Сереги есть, у Ани — нет)
@@ -607,7 +609,7 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
         const tab=xa.match(/табличк\S*\s*[«"„]([^»"“]{1,24})[»"“]/i);
         if(tab){at(t-200,()=>sign(tab[1]));wait(1400)} // табличка встаёт раньше, чем он к ней пойдёт
         if(xb)line(s,xb,'');else if(xa)wait(tab?4200:3400);else line(s,x,'');
-      }else if(/(?<![а-яё])ки-?я(?![а-яё])|по яйц|между ног/i.test(x)){ // 6. КИ-Я! игрушки убраны, видно сам удар
+      }else if(/(?<![а-яё])ки-?я(?![а-яё])/i.test(x)||/по яйц|между ног/i.test(xb?xa:isAct(x)?x:'')){ /* угроза в бабле («я тебя по яйцам как уебу») — не удар */ // 6. КИ-Я! игрушки убраны, видно сам удар
         // прыжок: встаёт на разбег, подпрыгивает и зависает в воздухе, потом под 45° летит ногами вниз
         // в пах триггеру («КИ-Я!» над его головой) и встаёт. Поворот — вокруг ступней (transform-origin внизу)
         let F0,G0,dX,dY;const g=p.el.querySelector('svg'),ss_=()=>s.el.querySelector('svg').getBoundingClientRect();
@@ -631,7 +633,7 @@ const storyScene=(C,done)=>{const [i,role,f0,said,a,fa,aa,faa,b,fb,portal,tooth]
         at(t,()=>{setFace(p,'восторг');roam(false)});at(t+700,()=>say(p,'ПОБЕДА!',6000,'brag'));wait(7000);
       }else if(xa){ // действие участника; «кидается на папу, обнимает» — бежит вплотную к триггеру
         const hug=/кида|броса|обнима|прижима/i.test(xa);
-        at(t,()=>{if(hug){paceOff();s.tx=s.x;still();p.sp=.0009;p.tx=s.x+(side=='l'?-1:1)*Math.max(.05,46/Math.max(AW,1));p.ty=s.y}else if(!calmB)roam(false);
+        at(t,()=>{if(hug){paceOff();s.tx=s.x;still();p.sp=.0009;p.tx=s.x+(side=='l'?-1:1)*Math.max(.05,46/Math.max(AW,1));p.ty=s.y}else if(kidB)roam(false);
           if(/рыда|плач|слёз|слез/i.test(xa))setFace(p,calmB?'улыбка':'грустный'); /* «спокойно» — принимает свои чувства: рыдает с улыбкой */else if(/весел|радует|смеёт|смеет|танцу|ржёт/i.test(xa))setFace(p,'восторг')});
         if(/показыва\S* (рук|пальц)|указыва/i.test(xa))at(t,()=>point(true)); // жест: палочка-рука вытягивается туда, куда идти
         if(xb){wait(hug?900:0);line(p,xb,'pb')}else wait(3400)}
@@ -744,7 +746,7 @@ const PL=$('#pl');
 const isAtk=c=>!Array.isArray(c),toothOfScene=c=>isAtk(c)?String(c.tooth||''):c[11];
 const scenesOf=p=>[...storiesOf(p),...ATK.filter(a=>a.who===p.name)]; // истории с триггером и атаки
 const teethOf=p=>[...new Set([...p.teeth,...scenesOf(p).map(toothOfScene).filter(Boolean)])].sort();
-const sceneTitle=c=>{if(isAtk(c))return c.role?`${cap(c.role)}: «${atkText(c)}»`:`«${atkText(c)}»`;const r=cap(c[1]||'адресат');return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
+const sceneTitle=c=>{if(isAtk(c))return c.role?`${cap(c.role)}: «${atkText(c)}»`:`«${atkText(c)}»`;const r=cap(c[1]||'адресат');if(c[16])return `${r}: ${c[16]}`; /* «правило» из таблицы: «Папа: запрет на нытьё» */return isAct(c[3])?`${r} ${c[3]}`:`${r}: «${c[3]}»`};
 /* две вкладки: «Сцены из жизни» (истории с триггером) и «Атаки» — списки и очереди не смешиваются */
 let plTab='life';const TABN={life:'Сцены из жизни',atk:'Атаки'};
 const plAll=t=>scenesOf(focus).filter(c=>(t=='atk')===isAtk(c)&&(!fT||toothOfScene(c)===fT));
