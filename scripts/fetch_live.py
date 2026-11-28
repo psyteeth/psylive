@@ -131,7 +131,8 @@ def clean(raw, pools):
         if not isinstance(c, list) or len(c) not in (12, 15, 16):
             raise Bad(f"{w}: ожидается 12, 15 или 16 полей")
         who, role, f0, said, a, fa, aa, faa, b, fb, portal, tooth = c[:12]
-        ra, rb, chain = (c[12], c[13], c[14]) if len(c) == 15 else ("", "", [])
+        # 15 и 16 полей: реакции и продолжение_Б есть в обоих (раньше при 16 полях продолжение терялось)
+        ra, rb, chain = (c[12], c[13], c[14]) if len(c) >= 15 else ("", "", [])
         if not isinstance(chain, list) or len(chain) > 8:
             raise Bad(f"{w}: продолжение_Б")
         intro = c[15] if len(c) == 16 else []
